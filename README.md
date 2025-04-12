@@ -12,7 +12,9 @@ cd user-management-system
 ```bash
 cd backend
 npm install
-cd ../frontend
+```
+```bash
+cd frontend
 npm install
 ```
 
