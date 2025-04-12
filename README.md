@@ -23,9 +23,9 @@ cd frontend
 npm run dev
 ```
 ## Usage
-- Register a new account at /accounts/register.
+- Register a new account at `/accounts/register`.
 - Verify your email using the link sent to your inbox.
-- Log in at /accounts/login.
+- Log in at `/accounts/login`.
 
 ## Testing
 - Functional testing results: [Link to test cases]
