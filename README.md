@@ -5,10 +5,14 @@ A full-stack application for managing user accounts with features like email sig
 1. Clone the repository:
 ```bash
 git clone https://github.com/Beirun/user-management-system.git
+cd user-management-system
 ```
 
 2. Install dependencies:
 ```bash
+cd backend
+npm install
+cd ../frontend
 npm install
 ```
 
