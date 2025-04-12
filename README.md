@@ -23,6 +23,7 @@ npm install
 cd backend
 npm run dev
 ```
+
 4. Start the Vue app:
 ```bash
 cd frontend
