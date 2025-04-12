@@ -7,7 +7,7 @@ A full-stack application for managing user accounts with features like email sig
 git clone https://github.com/your-username/user-management-system.git
 ```
 
-2.Install dependencies:
+2. Install dependencies:
 ```bash
 npm install
 ```
