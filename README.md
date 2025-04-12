@@ -3,24 +3,24 @@
 A full-stack application for managing user accounts with features like email sign-up, verification, authentication, role-based authorization, and CRUD operations.
 ## Installation
    1. Clone the repository:
-    ```bash
-       git clone https://github.com/your-username/user-management-system.git
-    ```
+```bash
+    git clone https://github.com/your-username/user-management-system.git
+```
 
     2.Install dependencies:
-    ```bash
-        npm install
-    ```
+```bash
+    npm install
+```
     3. Start the backend server:
-    ```bash
-        cd backend
-        npm run dev
-    ```
+```bash
+    cd backend
+    npm run dev
+```
 4. Start the Vue app:
-    ```bash
-        cd frontend
-        npm run dev
-    ```
+```bash
+    cd frontend
+    npm run dev
+```
 Usage
 Register a new account at /accounts/register.
 Verify your email using the link sent to your inbox.
