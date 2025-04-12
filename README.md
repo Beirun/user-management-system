@@ -22,14 +22,16 @@ npm run dev
 cd frontend
 npm run dev
 ```
-Usage
-Register a new account at /accounts/register.
-Verify your email using the link sent to your inbox.
-Log in at /accounts/login.
-Testing
-Functional testing results: [Link to test cases]
-Security testing results: [Link to test cases]
-Contributing
+## Usage
+- Register a new account at /accounts/register.
+- Verify your email using the link sent to your inbox.
+- Log in at /accounts/login.
+
+## Testing
+- Functional testing results: [Link to test cases]
+- Security testing results: [Link to test cases]
+
+## Contributing
 Follow the Git and GitHub workflow outlined in the project guidelines.
 
 License
