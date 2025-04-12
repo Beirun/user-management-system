@@ -4,7 +4,7 @@ A full-stack application for managing user accounts with features like email sig
 ## Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/user-management-system.git
+git clone https://github.com/Beirun/user-management-system.git
 ```
 
 2. Install dependencies:
