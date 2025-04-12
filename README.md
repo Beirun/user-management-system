@@ -4,11 +4,17 @@ A full-stack application for managing user accounts with features like email sig
 ## Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/user-management-system.git
+git clone https://github.com/Beirun/user-management-system.git
+cd user-management-system
 ```
 
 2. Install dependencies:
 ```bash
+cd backend
+npm install
+```
+```bash
+cd frontend
 npm install
 ```
 
@@ -23,9 +29,9 @@ cd frontend
 npm run dev
 ```
 ## Usage
-- Register a new account at /accounts/register.
+- Register a new account at `/accounts/register`.
 - Verify your email using the link sent to your inbox.
-- Log in at /accounts/login.
+- Log in at `/accounts/login`.
 
 ## Testing
 - Functional testing results: [Link to test cases]
