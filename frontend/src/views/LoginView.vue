@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router'
 
 
@@ -21,7 +22,12 @@ import { RouterLink } from 'vue-router'
                 <p class="text-6xl font-extrabold">Login</p>
                 <p>Please enter your credentials to access your account.</p>
                 <Input type="text" placeholder="Username" class="h-15 bg-[#F5F5F5] border-b-2 border-[#666E99] text-black"/>
-                <Input type="password" placeholder="Password" class="h-15 bg-[#F5F5F5] border-b-2 border-[#666E99] text-black"/>
+                <Input type="password" placeholder="Password" class="h-15 bg-[#F5F5F5] border-b-2 border-[#666E99] text-black">
+                    <template #suffix>
+
+                        <Eye color="black" :size="20"/>
+                    </template>
+                </Input>
                 <div class="w-full text-right italic">
                     <RouterLink to="/forgot-password">Forgot your password?</RouterLink>
                 </div>
