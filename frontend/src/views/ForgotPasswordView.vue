@@ -9,7 +9,7 @@ import {Dialog,
   DialogHeader,
   DialogTitle,
   DialogTrigger,} from '@/components/ui/dialog'
-import {ArrowLeft} from 'lucide-vue-next'  
+import {ArrowLeft} from 'lucide-vue-next'
 
 </script>
 
@@ -20,8 +20,9 @@ import {ArrowLeft} from 'lucide-vue-next'
         </div>
         <div class="w-full h-4/5 flex flex-col justify-center items-center">
 
-            <div class="w-2/7 h-3/5 p-10 bg-[#101A83] rounded-2xl  text-[#E4E5E7] flex flex-col justify-center items-center gap-10">
-                <p class="text-2xl">Enter your email to reset your password</p>
+            <div class="w-2/7 h-3/5 p-10  rounded-2xl  text-[#E4E5E7] flex flex-col justify-center items-center gap-10">
+                <p class="text-4xl font-extrabold">Reset Password</p>
+                <p class="text-md">Enter your email to reset your password</p>
                 <Input type="email" placeholder="Email" class="h-15 bg-[#F5F5F5] border-b-2 border-[#666E99]  text-black"/>
                 <Dialog class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold">
                     <DialogTrigger class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold rounded-md">
