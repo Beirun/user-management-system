@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
 // import { toast } from 'vue-sonner'
 import { reactive } from "vue";
 // import axios from '@/_helpers/axios';
@@ -16,6 +17,7 @@ const loginData = reactive({
 })
 const { login } = useAccountService()
 const toast = useToastService()
+const router = useRouter()
 
 const handleLogin = async () => {
     const response = await login(loginData.email, loginData.password);
@@ -26,7 +28,11 @@ const handleLogin = async () => {
         type: "success",
     }
     toast.success(toastOptions);
-
+    if(response.role === "Admin"){
+        router.push("/admin/users");
+    } else {
+        router.push("/user/dashboard");
+    }
 
     // Handle login logic here
     // console.log(loginData);

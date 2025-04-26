@@ -1,6 +1,24 @@
 <script setup lang="ts">
 import NavbarView from '@/views/User/NavbarView.vue';
+import { useAccountService } from '@/_services/account.service'
+import { useToastService } from '@/_services/toast.service'
+import { type Toast } from '@/models/toast'
+import { onBeforeMount } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
+onBeforeMount(async() => {
+    const { account } = useAccountService();
+    if (!account.value) {
+        const toastOptions: Toast = {
+            title: "Unauthorized",
+            description: "You are not authorized to access this page.",
+            type: "error",
+        }
+        useToastService().error(toastOptions);
+        router.push("/login");
+    }
+})
 </script>
 
 <template>
