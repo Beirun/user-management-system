@@ -20,7 +20,7 @@ router.get('/:id', authorize(), getById);
 router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
 router.delete('/:id', authorize(), _delete);
-
+router.post('/is-email-verified',  isEmailVerified); // New route for checking email verification
 module.exports = router;
 
 function authenticateSchema(req, res, next) {
@@ -29,6 +29,14 @@ function authenticateSchema(req, res, next) {
         password: Joi.string().required()
     });
     validateRequest(req, next, schema);
+}
+
+
+function isEmailVerified(req, res, next) {
+    const { email } = req.body;
+    res.json({isVerified: accountService.isEmailVerified(email)}) 
+        
+
 }
 
 function authenticate(req, res, next) {

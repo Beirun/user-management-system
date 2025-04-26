@@ -20,7 +20,8 @@ module.exports = {
     getById,
     create,
     update,
-    delete: _delete
+    delete: _delete,
+    isEmailVerified
 };
 
 async function authenticate({ email, password, ipAddress }) {
@@ -43,6 +44,11 @@ async function authenticate({ email, password, ipAddress }) {
         jwtToken,
         refreshToken: refreshToken.token
     };
+}
+
+async function isEmailVerified(email) {
+    const account = await db.Account.findOne({ where: { email } });
+    return account.verified !== null;
 }
 
 async function refreshToken({ token, ipAddress }) {

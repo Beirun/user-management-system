@@ -9,6 +9,7 @@ import { reactive } from "vue";
 // import axios from '@/_helpers/axios';
 // import axios from 'axios';
 import { useAccountService } from '@/_services/account.service'
+import { useAccountStore } from '@/stores/account'
 import { useToastService } from '@/_services/toast.service'
 import type { Toast } from '@/models/toast'
 const loginData = reactive({
@@ -16,18 +17,21 @@ const loginData = reactive({
     password: ""
 })
 const { login } = useAccountService()
+const accountStore = useAccountStore();
 const toast = useToastService()
 const router = useRouter()
 
 const handleLogin = async () => {
     const response = await login(loginData.email, loginData.password);
     console.log("response", response)
+    accountStore.setAccount(response);
     const toastOptions : Toast = {
         title: "Login",
         description: "Login successful",
         type: "success",
     }
     toast.success(toastOptions);
+
     if(response.role === "Admin"){
         router.push("/admin/users");
     } else {
