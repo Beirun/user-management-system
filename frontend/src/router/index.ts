@@ -4,6 +4,8 @@ import LoginView from '@/views/LoginView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import UserListView from '@/views/Admin/UserLIstView.vue'
+import DashboardView from '@/views/User/DashboardView.vue'
+import ProfileView from '@/views/User/ProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +42,16 @@ const router = createRouter({
       path: '/admin/users',
       name: 'admin-users',
       component: UserListView,
+    },
+    {
+      path: '/user/dashboard',
+      name: 'user-dashboard',
+      component: DashboardView,
+    },
+    {
+      path: '/user/profile',
+      name: 'user-profile',
+      component: ProfileView
     }
   ],
 })

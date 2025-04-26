@@ -27,8 +27,8 @@ import {Dialog,
                 <TableCaption>
                 </TableCaption>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>
+                    <TableRow class="hover:bg-transparent">
+                        <TableHead class="w-2/5">
                             Name
                         </TableHead>
                         <TableHead>
@@ -41,9 +41,9 @@ import {Dialog,
                 </TableHeader>
                 <TableBody>
                     
-                    <TableRow>
+                    <TableRow class="hover:text-black">
                         <TableCell>
-                            Name here
+                            Title Firstname Lastname
                         </TableCell>
                         <TableCell>
                             Email here

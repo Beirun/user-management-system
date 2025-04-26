@@ -33,9 +33,9 @@ import { RouterLink } from 'vue-router'
                         <DialogHeader>
                             <DialogTitle></DialogTitle>
                             <DialogDescription>
-                                Check your email for a link to reset your password.
                             </DialogDescription>
                         </DialogHeader>
+                        Check your email for a link to reset your password.
                         
                         <DialogFooter>
                             <DialogClose>
