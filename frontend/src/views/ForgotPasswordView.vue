@@ -10,6 +10,7 @@ import {Dialog,
   DialogTitle,
   DialogTrigger,} from '@/components/ui/dialog'
 import {ArrowLeft} from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 
 </script>
 
@@ -38,9 +39,9 @@ import {ArrowLeft} from 'lucide-vue-next'
                         
                         <DialogFooter>
                             <DialogClose>
-                                <Button type="button" variant="secondary" class="cursor-pointer">
-                                    Close
-                                </Button>
+                                <RouterLink type="button" variant="secondary" class="cursor-pointer" to="/login">
+                                    Okay
+                                </RouterLink>
                             </DialogClose>
                         </DialogFooter>
                     </DialogContent>
