@@ -3,7 +3,9 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Account } from '@/models/account';
 import { environment } from '@/environments/environment';
-
+import { useAccountStore } from '@/stores/account';
+import { useToastService } from '@/_services/toast.service'; 
+import type { Toast } from '@/models/toast';
 
 type NewAccount = {
     title: string;
@@ -17,6 +19,7 @@ type NewAccount = {
 }
 
 export function useAccountService() {
+    const toast = useToastService();
     const router = useRouter();
     const account = ref<Account | null>(null);
     let refreshTokenTimeout: number | null = null;
@@ -55,6 +58,16 @@ export function useAccountService() {
     // Authentication methods
     async function login(email: string, password: string): Promise<Account> {
         try {
+            const isVerified = await fetchRequest<{ isVerified: boolean }>('/is-email-verified', 'POST', { email });
+            if (!isVerified.isVerified) {
+                const toastOptions: Toast = {
+                    title: 'Email not verified',
+                    description: 'Please check your inbox for the verification email.',
+                    type: 'error',
+                }
+                toast.error(toastOptions);
+                // toast.error('Email not verified. Please check your inbox.');
+            }
             const data = await fetchRequest<Account>('/authenticate', 'POST', { email, password });
             account.value = data;
             startRefreshTokenTimer();
