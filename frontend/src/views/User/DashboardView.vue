@@ -5,11 +5,22 @@ import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
 import { onBeforeMount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAccountStore } from '@/stores/account'
 const router = useRouter()
+const accountStore = useAccountStore();
 
 onBeforeMount(async() => {
-    const { account } = useAccountService();
-    if (!account.value) {
+    const account = accountStore.getAccount();
+    if (!account) {
+        const toastOptions: Toast = {
+            title: "Unauthorized",
+            description: "You are not authorized to access this page.",
+            type: "error",
+        }
+        useToastService().error(toastOptions);
+        router.push("/login");
+    }
+    if (account!.role !== "User") {
         const toastOptions: Toast = {
             title: "Unauthorized",
             description: "You are not authorized to access this page.",
