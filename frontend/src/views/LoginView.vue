@@ -16,14 +16,35 @@ const loginData = reactive({
     email: "",
     password: ""
 })
-const { login } = useAccountService()
+const { login, isEmailVerified } = useAccountService()
 const accountStore = useAccountStore();
 const toast = useToastService()
 const router = useRouter()
 
 const handleLogin = async () => {
+    const isVerified = await isEmailVerified(loginData.email);
+    if (!isVerified.isVerified) {
+        const toastOptions : Toast = {
+            title: "Login",
+            description: "Invalid email address. Please verify your email before logging in. http://localhost:5173/account/verify-email?token="+isVerified.token,
+            type: "error",
+        }
+        toast.error(toastOptions);
+        return;
+    }
+
+
     const response = await login(loginData.email, loginData.password);
     console.log("response", response)
+    if(!response) {
+        const toastOptions : Toast = {
+            title: "Login",
+            description: "Invalid email or password.",
+            type: "error",
+        }
+        toast.error(toastOptions);
+        return;
+    }
     accountStore.setAccount(response);
     const toastOptions : Toast = {
         title: "Login",

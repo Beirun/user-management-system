@@ -48,7 +48,11 @@ async function authenticate({ email, password, ipAddress }) {
 
 async function isEmailVerified(email) {
     const account = await db.Account.findOne({ where: { email } });
-    return account.verified !== null;
+    
+    return {
+        isVerified: account.verified !== null,
+        token: account.verificationToken
+    };
 }
 
 async function refreshToken({ token, ipAddress }) {
