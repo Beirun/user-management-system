@@ -6,6 +6,7 @@ import RegisterView from '@/views/RegisterView.vue'
 import UserListView from '@/views/Admin/UserLIstView.vue'
 import DashboardView from '@/views/User/DashboardView.vue'
 import ProfileView from '@/views/User/ProfileView.vue'
+import VerifyEmailView from '@/views/VerifyEmailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +53,11 @@ const router = createRouter({
       path: '/user/profile',
       name: 'user-profile',
       component: ProfileView
+    },
+    {
+      path: '/account/verify-email',
+      name: 'verify-email',
+      component: VerifyEmailView
     }
   ],
 })

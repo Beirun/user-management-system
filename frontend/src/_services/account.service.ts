@@ -96,9 +96,9 @@ export function useAccountService() {
         return response;
     }
 
-    async function verifyEmail(token: string): Promise<void> {
+    async function verifyEmail(token: string): Promise<any> {
         const response = await fetchRequest('/verify-email', 'POST', { token });
-        // return response;
+        return response;
 
     }
 
