@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table'
 
 import NavbarView from '@/views/Admin/NavbarView.vue'
+
 </script>
 
 <template>
