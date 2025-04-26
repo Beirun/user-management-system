@@ -34,11 +34,13 @@ function authenticateSchema(req, res, next) {
 
 function isEmailVerified(req, res, next) {
     const { email } = req.body;
-    res.json({isVerified: accountService.isEmailVerified(email)}) 
-        
-
+    accountService.isEmailVerified(email)
+    .then((acc) => {
+        console.log('Email verification response:', acc); // Log the response for debugging
+        // Email verification logic here
+        res.json({ isVerified: acc.isVerified, token: acc.token });
+    }).catch(next);
 }
-
 function authenticate(req, res, next) {
     const { email, password } = req.body;
     const ipAddress = req.ip;

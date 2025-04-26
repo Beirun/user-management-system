@@ -48,6 +48,12 @@ export function useAccountService() {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
+            const toastOptions: Toast = {
+                title: "Error Logging In",
+                description: endpoint === '/authenticate' || endpoint === '/is-email-verified'? "Incorrect Password":   error.description || 'An error occurred',
+                type: 'error'
+            }
+            toast.error(toastOptions);   
             throw new Error(error.message || 'Request failed');
         }
 
@@ -55,19 +61,17 @@ export function useAccountService() {
         return response.json();
     }
 
+    async function isEmailVerified(email: string): Promise<any> {
+        const response = await fetchRequest('/is-email-verified', 'POST', { email });
+        console.log('Email verification response:', response);
+        return response;
+
+    }
+
     // Authentication methods
     async function login(email: string, password: string): Promise<Account> {
         try {
-            const isVerified = await fetchRequest<{ isVerified: boolean }>('/is-email-verified', 'POST', { email });
-            if (!isVerified.isVerified) {
-                const toastOptions: Toast = {
-                    title: 'Email not verified',
-                    description: 'Please check your inbox for the verification email.',
-                    type: 'error',
-                }
-                toast.error(toastOptions);
-                // toast.error('Email not verified. Please check your inbox.');
-            }
+            
             const data = await fetchRequest<Account>('/authenticate', 'POST', { email, password });
             account.value = data;
             startRefreshTokenTimer();
@@ -215,6 +219,7 @@ export function useAccountService() {
         getById,
         create,
         update,
-        deleteAccount
+        deleteAccount,
+        isEmailVerified
     };
 }
