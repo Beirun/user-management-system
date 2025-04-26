@@ -3,15 +3,31 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router'
-import { toast } from 'vue-sonner'
+// import { toast } from 'vue-sonner'
 import { reactive } from "vue";
 // import axios from '@/_helpers/axios';
 // import axios from 'axios';
+import { useAccountService } from '@/_services/account.service'
+import { useToastService } from '@/_services/toast.service'
+import type { Toast } from '@/models/toast'
 const loginData = reactive({
     email: "",
     password: ""
 })
+const { login } = useAccountService()
+const toast = useToastService()
+
 const handleLogin = async () => {
+    const response = await login(loginData.email, loginData.password);
+    console.log("response", response)
+    const toastOptions : Toast = {
+        title: "Login",
+        description: "Login successful",
+        type: "success",
+    }
+    toast.success(toastOptions);
+
+
     // Handle login logic here
     // console.log(loginData);
     // const response = await fetch("http://localhost:3000/accounts/test");
