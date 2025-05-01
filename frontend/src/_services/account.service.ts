@@ -135,16 +135,18 @@ export function useAccountService() {
 
     }
 
-    async function forgotPassword(email: string): Promise<void> {
-        await fetchRequest('/forgot-password', 'POST', { email });
+    async function forgotPassword(email: string): Promise<any> {
+        const response = await fetchRequest('/forgot-password', 'POST', { email });
+        return response
     }
 
     async function validateResetToken(token: string): Promise<void> {
         await fetchRequest('/validate-reset-token', 'POST', { token });
     }
 
-    async function resetPassword(token: string, password: string, confirmPassword: string): Promise<void> {
-        await fetchRequest('/reset-password', 'POST', { token, password, confirmPassword });
+    async function resetPassword(token: string, password: string, confirmPassword : string): Promise<any> {
+        const response = await fetchRequest('/reset-password', 'POST', { token, password, confirmPassword });
+        return response
     }
 
     // CRUD operations

@@ -9,4 +9,5 @@ export type Account =  {
     role: Role;
     jwtToken?: string;
     status: string;
+    lastLogin: string;
 };
