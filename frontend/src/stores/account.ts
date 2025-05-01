@@ -18,4 +18,4 @@ export const useAccountStore = defineStore('account', () => {
   }
 
   return { account, isLoggedIn, login, logout, getAccount, setAccount }
-})
+},{persist: true})

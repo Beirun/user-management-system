@@ -11,44 +11,81 @@ import { reactive } from "vue";
 import { useAccountService } from '@/_services/account.service'
 import { useAccountStore } from '@/stores/account'
 import { useToastService } from '@/_services/toast.service'
-import type { Toast } from '@/models/toast'
+import type { Toast, ToastWithAction } from '@/models/toast'
 const loginData = reactive({
     email: "",
     password: ""
 })
-const { login, isEmailVerified } = useAccountService()
+const { login, isEmailVerified, emailExists, isPasswordCorrect } = useAccountService()
 const accountStore = useAccountStore();
 const toast = useToastService()
 const router = useRouter()
 
 const handleLogin = async () => {
-    const isVerified = await isEmailVerified(loginData.email);
-    if (!isVerified.isVerified) {
+    if (!loginData.email || !loginData.password) {
         const toastOptions : Toast = {
-            title: "Login",
-            description: "Invalid email address. Please verify your email before logging in. http://localhost:5173/account/verify-email?token="+isVerified.token,
+            title: "Login Failed",
+            description: "Please enter your email and password.",
             type: "error",
         }
         toast.error(toastOptions);
         return;
     }
-
-
+    //check if emailexists
+    const emailExistsResult = await emailExists(loginData.email);
+    if(!emailExistsResult.exists) {
+        const toastOptions : Toast = {
+            title: "Login Failed",
+            description: "Email does not exist.",
+            type: "error",
+        }
+        toast.error(toastOptions);
+        return;
+    }
+    const isPasswordCorrectResult = await isPasswordCorrect(loginData.email, loginData.password);
+    if(!isPasswordCorrectResult.isCorrect) {
+        const toastOptions : Toast = {
+            title: "Login Failed",
+            description: "Password is incorrect.",
+            type: "error",
+        }
+        toast.error(toastOptions);
+        return;
+    }
+    
+    const isVerified = await isEmailVerified(loginData.email);
+    if (!isVerified.isVerified) {
+        const toastOptions : ToastWithAction = {
+            title: "Login Failed",
+            description: 'Invalid email address. Please verify your email before logging in.',
+            type: "error",
+            action: {
+                label: 'Verify Email',
+                onClick: () => {
+                    window.location.href = `http://localhost:5173/account/verify-email?token=${isVerified.token}`;
+                },
+            },
+        }
+        toast.error(toastOptions);
+        return;
+    }
     const response = await login(loginData.email, loginData.password);
     console.log("response", response)
     if(!response) {
         const toastOptions : Toast = {
-            title: "Login",
+            title: "Login Failed",
             description: "Invalid email or password.",
             type: "error",
         }
         toast.error(toastOptions);
         return;
     }
+    
+
     accountStore.setAccount(response);
     const toastOptions : Toast = {
-        title: "Login",
-        description: "Login successful",
+        title: "Login Successful",
+        description: "Logged in successfully.",
         type: "success",
     }
     toast.success(toastOptions);
