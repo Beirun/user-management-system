@@ -21,7 +21,9 @@ module.exports = {
     create,
     update,
     delete: _delete,
-    isEmailVerified
+    isEmailVerified,
+    emailExists,
+    isPasswordCorrect,
 };
 
 async function authenticate({ email, password, ipAddress }) {
@@ -31,6 +33,8 @@ async function authenticate({ email, password, ipAddress }) {
         throw 'Email or password is incorrect';
     }
 
+    account.lastLogin = Date.now();
+    await account.save();
     // authentication successful so generate jwt and refresh tokens
     const jwtToken = generateJwtToken(account);
     const refreshToken = generateRefreshToken(account, ipAddress);
@@ -53,6 +57,24 @@ async function isEmailVerified(email) {
         isVerified: account.verified !== null,
         token: account.verificationToken
     };
+}
+
+async function isPasswordCorrect(email, password) {
+    const account = await db.Account.scope('withHash').findOne({ where: { email } });
+
+    if (!(await bcrypt.compare(password, account.passwordHash))) {
+        return { isCorrect: false };
+    }
+    else{
+        return { isCorrect: true };
+    }
+
+    
+}
+
+async function emailExists(email){
+    const account = await db.Account.findOne({ where: { email } });
+    return account !== null;
 }
 
 async function refreshToken({ token, ipAddress }) {
@@ -100,6 +122,7 @@ async function register(params, origin) {
     // first registered account is an admin
     const isFirstAccount = (await db.Account.count()) === 0;
     account.role = isFirstAccount ? Role.Admin : Role.User;
+    account.status = account.role === Role.User ? 'Inactive' : 'Active';
     account.verificationToken = randomTokenString();
     
     // hash password

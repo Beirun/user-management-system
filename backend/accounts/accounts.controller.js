@@ -20,7 +20,9 @@ router.get('/:id', authorize(), getById);
 router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
 router.delete('/:id', authorize(), _delete);
+router.post('/email-exists', emailExists); // New route for checking if email exists
 router.post('/is-email-verified',  isEmailVerified); // New route for checking email verification
+router.post('/is-password-correct', isPasswordCorrect); // New route for checking if password is correct
 module.exports = router;
 
 function authenticateSchema(req, res, next) {
@@ -31,6 +33,14 @@ function authenticateSchema(req, res, next) {
     validateRequest(req, next, schema);
 }
 
+function isPasswordCorrect(req, res, next) {
+    const { email, password } = req.body;
+    accountService.isPasswordCorrect(email, password)
+    .then((result) => {
+        console.log('Password correctness response:', result);
+        res.json({ isCorrect: result.isCorrect });
+    }).catch(next);
+}
 
 function isEmailVerified(req, res, next) {
     const { email } = req.body;
@@ -40,6 +50,11 @@ function isEmailVerified(req, res, next) {
         // Email verification logic here
         res.json({ isVerified: acc.isVerified, token: acc.token });
     }).catch(next);
+}
+function emailExists(req, res, next) {
+    accountService.emailExists(req.body.email)
+        .then((exists) => res.json({ exists: exists }))
+        .catch(next);
 }
 function authenticate(req, res, next) {
     const { email, password } = req.body;
@@ -74,6 +89,8 @@ function revokeTokenSchema(req, res, next) {
     validateRequest(req, next, schema);
 }
 
+
+
 function revokeToken(req, res, next) {
     // accept token from request body or cookie
     const token = req.body.token || req.cookies.refreshToken;
@@ -102,6 +119,7 @@ function registerSchema(req, res, next) {
         acceptTerms: Joi.boolean().valid(true).required()
     });
     validateRequest(req, next, schema);
+    
 }
 
 function register(req, res, next) {

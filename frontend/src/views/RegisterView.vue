@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import type { Account } from '@/models/account';
 import type { Toast } from '@/models/toast';
 import { useAccountService } from '@/_services/account.service';
@@ -21,6 +21,7 @@ import { useToastService } from '@/_services/toast.service';
 import { mustMatch} from '@/_helpers/must-match.validator';
 
 const router = useRouter();
+const isRegistering = ref(false);
 const {register} = useAccountService();
 const toast = useToastService();
 const newAccount = reactive({
@@ -36,6 +37,7 @@ const newAccount = reactive({
 })
 
 const handleSubmit = async () => {
+    isRegistering.value = true;
     // Handle form submission
     if (!newAccount.acceptTerms) {
         const toastOptions : Toast = {
@@ -44,6 +46,7 @@ const handleSubmit = async () => {
             type: "error",
         }
         toast.error(toastOptions);
+        isRegistering.value = false;    
         return;
     }
 
@@ -56,6 +59,7 @@ const handleSubmit = async () => {
             type: "success",
         }
         toast.success(toastOptions);
+        isRegistering.value = false;
         router.push("/login");       
 
     } catch (error) {
@@ -102,7 +106,7 @@ const handleSubmit = async () => {
                         <Checkbox v-model="newAccount.acceptTerms" id="terms" />
                         <Label for="terms">Accept terms and conditions</Label>
                     </div>
-                    <Button @click="handleSubmit" class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold">Register</Button>
+                    <Button @click="handleSubmit" :class="{'cursor-progress': isRegistering}" class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold" :disabled="isRegistering">{{ isRegistering ? 'Registering...' : 'Register' }}</Button>
                     <div class="mt-3 self-center">
                         <p>Already have an account?<RouterLink to="/login" class="text-[#1A33C1]"> Login</RouterLink></p>
                     </div>

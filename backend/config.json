@@ -4,7 +4,7 @@
         "port": 3306,
         "user": "root",
         "password": "",
-        "database": "user_management_system"
+        "database": "user-management-system"
     },
     "secret": "Deeznuts",
     "emailFrom": "info@test-email.com",

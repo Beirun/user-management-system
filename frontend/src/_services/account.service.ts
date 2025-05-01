@@ -49,8 +49,9 @@ export function useAccountService() {
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
             const toastOptions: Toast = {
-                title: "Error Logging In",
-                description: endpoint === '/authenticate' || endpoint === '/is-email-verified'? "Incorrect Password":   error.description || 'An error occurred',
+                title: "Login Failed",
+                description: error.message || 'An error occurred',
+                // description: endpoint === '/authenticate' || endpoint === '/is-email-verified'? "Incorrect Password":   error.description || 'An error occurred',
                 type: 'error'
             }
             toast.error(toastOptions);   
@@ -66,6 +67,16 @@ export function useAccountService() {
         console.log('Email verification response:', response);
         return response;
 
+    }
+    async function emailExists(email: string): Promise<any> {
+        const response = await fetchRequest('/email-exists', 'POST', { email });
+        console.log('Email exists response:', response);
+        return response;
+    }
+    async function isPasswordCorrect(email: string, password: string): Promise<any> {
+        const response = await fetchRequest('/is-password-correct', 'POST', { email, password });
+        console.log('Password correctness response:', response);
+        return response;
     }
 
     // Authentication methods
@@ -220,6 +231,8 @@ export function useAccountService() {
         create,
         update,
         deleteAccount,
-        isEmailVerified
+        isEmailVerified,
+        emailExists,
+        isPasswordCorrect,
     };
 }

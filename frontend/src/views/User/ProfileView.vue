@@ -9,15 +9,35 @@ import {Dialog,
   DialogHeader,
   DialogTitle,
   DialogTrigger,} from '@/components/ui/dialog'
+  import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import Button from '@/components/ui/button/Button.vue';
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
-import { onBeforeMount } from 'vue'
+import { onBeforeMount, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountStore } from '@/stores/account'
 const router = useRouter()
 const accountStore = useAccountStore();
-
+const account = accountStore.getAccount();
+const currentAccount = reactive({
+    id: account?.id,
+    role: account?.role,
+    title: account?.title,
+    firstName: account?.firstName,
+    lastName: account?.lastName,
+    email: account?.email,
+    password: "",
+    confirmPassword:"",
+})
 onBeforeMount(async() => {
     const account = accountStore.getAccount();
     if (!account) {
@@ -50,11 +70,11 @@ onBeforeMount(async() => {
             <div class="w-1/4 flex flex-col gap-5 justify-between">
                 <div class="w-full flex ">
                     <p class="w-1/3">Name:</p>
-                    <p>Mr. Bernard Jay Orillo</p>
+                    <p> {{ currentAccount.title }}. {{ currentAccount.firstName }} {{ currentAccount.lastName }}</p>
                 </div>
                 <div class="w-full flex ">
                     <p class="w-1/3">Email:</p>
-                    <p>orillobernardjay@gmail.com</p>
+                    <p>{{ currentAccount.email }}</p>
                 </div>
                 <Dialog>
                     <DialogTrigger>
@@ -67,27 +87,30 @@ onBeforeMount(async() => {
                             Make changes to the your details.
                         </DialogDescription>
                         </DialogHeader>
-                        <div class="grid gap-4 py-4">
-                            <div class="grid grid-cols-4 items-center gap-4">
-                                <label for="title" class="text-right">Title</label>
-                                <input id="title" type="text" class="col-span-3 h-10 border mt-1 rounded px-3 py-2 bg-[#F5F5F5] border-[#666E99] text-black" />
-                            </div>
-                            <div class="grid grid-cols-4 items-center gap-4">
-                                <label for="firstname" class="text-right">Firstname</label>
-                                <input id="firstname" type="text" class="col-span-3 h-10 border mt-1 rounded px-3 py-2 bg-[#F5F5F5] border-[#666E99] text-black" />
-                            </div>
-                            <div class="grid grid-cols-4 items-center gap-4">
-                                <label for="lastname" class="text-right">Lastname</label>
-                                <input id="lastname" type="text" class="col-span-3 h-10 border mt-1 rounded px-3 py-2 bg-[#F5F5F5] border-[#666E99] text-black" />
-                            </div>
-                            <div class="grid grid-cols-4 items-center gap-4">
-                                <label for="email" class="text-right">Email</label>
-                                <input id="email" type="email" class="col-span-3 h-10 border mt-1 rounded px-3 py-2 bg-[#F5F5F5] border-[#666E99] text-black" />
-                            </div>
-                            <div class="grid grid-cols-4 items-center gap-4">
-                                <label for="password" class="text-right">Password</label>
-                                <input id="password" type="password" class="col-span-3 h-10 border mt-1 rounded px-3 py-2 bg-[#F5F5F5] border-[#666E99] text-black" />
-                            </div>
+                        <div class="w-full flex flex-col gap-4">
+                            <Select v-model="currentAccount.title">
+                                <SelectTrigger class="w-full bg-[#F5F5F5] py-6 text-black border-b-2 border-[#666E99]">
+                                <SelectValue placeholder="Title" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem value="Mr">
+                                    Mr
+                                    </SelectItem>
+                                    <SelectItem value="Mrs">
+                                    Mrs
+                                    </SelectItem>
+                                    <SelectItem value="Ms">
+                                    Ms
+                                    </SelectItem>
+                                </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Input v-model="currentAccount.firstName" type="text" placeholder="Firstname" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
+                            <Input v-model="currentAccount.lastName" type="text" placeholder="Lastname" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
+                            <Input v-model="currentAccount.email" type="email" placeholder="Email" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
+                            <Input v-model="currentAccount.password" type="password" placeholder="Password" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
+                            <Input v-model="currentAccount.confirmPassword" type="password" placeholder="Confirm Password" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
                         </div>
                         <DialogFooter>
                         <DialogClose class="bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 w-full text-md font-bold rounded-lg text-white">Save</DialogClose>
