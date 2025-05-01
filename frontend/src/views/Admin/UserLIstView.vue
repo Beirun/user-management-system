@@ -32,7 +32,7 @@ import {
 } from 'lucide-vue-next'
 import { Skeleton } from '@/components/ui/skeleton'
 
-import NavbarView from '@/views/Admin/NavbarView.vue'
+import NavbarView from '@/views/NavbarView.vue'
 import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
@@ -148,6 +148,39 @@ onBeforeMount(async () => {
   }
   await fetchAccounts()
 })
+
+ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
+  if(!acc.lastLogin) return "Never"
+  if(accountStore.account!.id === acc.id) return "Active now";
+  // Convert to Date object if it's not already
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  // Time intervals in seconds
+  const intervals = {
+    year: 31536000,
+    month: 2592000,
+    week: 604800,
+    day: 86400,
+    hour: 3600,
+    minute: 60,
+    second: 1
+  };
+
+  // Calculate time difference
+  for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+    const interval = Math.floor(seconds / secondsInUnit);
+    
+    if (interval >= 1) {
+      return interval === 1 
+        ? `${interval} ${unit} ago` 
+        : `${interval} ${unit}s ago`;
+    }
+  }
+
+  return 'Active now';
+}
 </script>
 
 <template>
@@ -179,22 +212,22 @@ onBeforeMount(async () => {
           </div>
 
           <!-- Loading State -->
-          <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div v-for="i in 8" :key="i" class="border rounded-lg p-4">
-              <div class="flex items-center gap-4">
-                <Skeleton class="h-12 w-12 rounded-full" />
-                <div class="space-y-2">
-                  <Skeleton class="h-4 w-[120px]" />
-                  <Skeleton class="h-4 w-[80px]" />
-                </div>
-              </div>
-              <div class="mt-4 flex justify-between items-center">
-                <Skeleton class="h-4 w-[60px]" />
-                <Skeleton class="h-8 w-20 rounded-md" />
-              </div>
-            </div>
-          </div>
-
+<div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div v-for="i in 8" :key="i" class="border rounded-lg p-4 bg-card">
+    <div class="flex items-start gap-3">
+      <Skeleton class="h-20 w-20 rounded-full" />
+      <div class="flex-1 space-y-2">
+        <Skeleton class="h-5 w-[140px]" />
+        <Skeleton class="h-4 w-[100px]" />
+        <Skeleton class="h-4 w-[160px]" />
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t flex items-center justify-between">
+      <Skeleton class="h-4 w-[100px]" />
+      <Skeleton class="h-8 w-16 rounded-md" />
+    </div>
+  </div>
+</div>
           <!-- Empty State -->
           <div
             v-else-if="filteredAccounts.length === 0"
@@ -254,7 +287,7 @@ onBeforeMount(async () => {
               </div>
 
               <div class="mt-4 pt-4 border-t flex items-center justify-between">
-                <div class="text-sm text-muted-foreground">Last active: 2 days ago</div>
+                <div class="text-sm text-muted-foreground">Last active: {{ getTimeAgo(account, account.lastLogin) }}</div>
                 <Button size="sm" @click="openUserDetails(account)" class="h-8 text-">
                   Edit
                 </Button>
@@ -265,7 +298,6 @@ onBeforeMount(async () => {
       </div>
     </main>
 
-    <!-- User Details Dialog -->
     <!-- User Details Dialog -->
     <Dialog v-model:open="isDialogOpen">
       <DialogContent class="sm:max-w-[525px]">

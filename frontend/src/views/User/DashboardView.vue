@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import NavbarView from '@/views/User/NavbarView.vue';
+import NavbarView from '@/views/NavbarView.vue';
 import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'

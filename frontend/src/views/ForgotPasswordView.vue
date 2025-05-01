@@ -11,6 +11,35 @@ import {Dialog,
   DialogTrigger,} from '@/components/ui/dialog'
 import {ArrowLeft} from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
+import { ref } from 'vue'
+import type { Toast, ToastWithAction } from '@/models/toast'
+import { useToastService } from '@/_services/toast.service'
+import { useAccountService } from '@/_services/account.service'
+const toast = useToastService()
+
+const { forgotPassword } = useAccountService()
+
+const email = ref('')
+
+const handleSubmit = async()=>{
+    if(!email.value){
+        const toastOptions: Toast = {
+      title: 'Reset Failed',
+      description: 'Please enter your email.',
+      type: 'error',
+    }
+    toast.error(toastOptions)
+    return
+    }
+    const response = await forgotPassword(email.value)
+    const toastOptions: Toast = {
+      title: 'Reset Success',
+      description: response.message,
+      type: 'success',
+    }
+    toast.success(toastOptions)
+
+}
 
 </script>
 
@@ -24,8 +53,9 @@ import { RouterLink } from 'vue-router'
             <div class="w-2/7 h-3/5 p-10  rounded-2xl  text-[#E4E5E7] flex flex-col justify-center items-center gap-10">
                 <p class="text-4xl font-extrabold">Reset Password</p>
                 <p class="text-md">Enter your email to reset your password</p>
-                <Input type="email" placeholder="Email" class="h-15 bg-[#F5F5F5] border-b-2 border-[#666E99]  text-black"/>
-                <Dialog class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold">
+                <Input v-model="email" type="email" placeholder="Email" class="h-15"/>
+                <Button @click="handleSubmit" class="w-full h-15 font-bold text-md text-foreground">Sumit</Button>
+                <!-- <Dialog class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold">
                     <DialogTrigger class="w-full bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 text-md font-bold rounded-md">
                         Submit
                     </DialogTrigger>
@@ -45,7 +75,7 @@ import { RouterLink } from 'vue-router'
                             </DialogClose>
                         </DialogFooter>
                     </DialogContent>
-                </Dialog>
+                </Dialog> -->
             </div>
         </div>
     </div>

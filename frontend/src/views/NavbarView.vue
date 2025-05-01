@@ -1,13 +1,13 @@
 <script lang="ts" setup>
+import { RouterLink } from 'vue-router';
 import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
 import { useAccountStore } from '@/stores/account'
 import { useRouter } from 'vue-router'
-import { computed, onBeforeMount, ref } from 'vue'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, LogOut } from 'lucide-vue-next'
+import { Sun, Moon, LogOut, User } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
 
 const mode = useColorMode({ disableTransition: false })
@@ -19,17 +19,18 @@ const toast = useToastService()
 const toggleTheme = () => {
   mode.value = mode.value === 'dark' ? 'light' : 'dark'
 }
+
 const handleLogout = async () => {
   try {
     await logout()
     accountStore.logout()
-    router.push('/login')
-    const toastOptions: Toast = {
-      title: 'Logout',
-      description: 'Logout successful',
-      type: 'success',
+    const toastOptions : Toast = {
+        title: "Logout Successful",
+        description: "Logged out successfully.",
+        type: "success",
     }
-    toast.success(toastOptions)
+    toast.success(toastOptions);
+    router.push('/login')
   } catch (error) {
     const toastOptions: Toast = {
       title: 'Logout',
@@ -39,7 +40,7 @@ const handleLogout = async () => {
     toast.error(toastOptions)
   }
 }
-console.log("mode",mode)
+
 </script>
 
 <template>
@@ -62,23 +63,29 @@ console.log("mode",mode)
           <path d="M9 10h6" />
           <path d="M12 7v6" />
         </svg>
-        <span class="text-lg font-semibold">EduManage</span>
+        <RouterLink :to="accountStore.account?.role === 'Admin' ? '/admin/users' : '/user/dashboard'" class="text-lg font-semibold">EduManage</RouterLink>
       </div>
 
       <div class="flex items-center gap-2">
+        <RouterLink to="/profile">
+          <Button variant="ghost" size="sm" class="gap-2">
+            <User class="h-4 w-4" />
+            <span>Profile</span>
+          </Button>
+        </RouterLink>
+        
         <div class="flex items-center gap-2">
-            <Switch 
+          <Switch 
             :checked="mode === 'dark'"
             @click="toggleTheme"
             class="data-[state=checked]:bg-primary"
-            >
+          >
             <template #thumb>
-
-                <Sun v-if="mode==='light'" class="h-4 w-4 text-primary " />
-                <Moon v-else class="h-4 w-4 text-primary " />
+              <Sun v-if="mode==='light'" class="h-4 w-4 text-primary" />
+              <Moon v-else class="h-4 w-4 text-primary" />
             </template>
-        </Switch>
-  </div>
+          </Switch>
+        </div>
 
         <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
           <LogOut class="h-4 w-4" />
@@ -87,4 +94,4 @@ console.log("mode",mode)
       </div>
     </div>
   </header>
-</template>
+</template> 
