@@ -15,7 +15,7 @@ router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
-router.get('/', getAll);
+router.get('/',authorize(), getAll);
 router.get('/:id', authorize(), getById);
 router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
@@ -95,7 +95,7 @@ function revokeToken(req, res, next) {
     // accept token from request body or cookie
     const token = req.body.token || req.cookies.refreshToken;
     const ipAddress = req.ip;
-
+    console.log('body:', req.body); // Log the token for debugging
     if (!token) return res.status(400).json({ message: 'Token is required' });
 
     // users can revoke their own tokens and admins can revoke any tokens
