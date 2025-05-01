@@ -6,39 +6,10 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,} from '@/components/ui/table'
-  
-  import { useToastService } from '@/_services/toast.service'
-import { type Toast } from '@/models/toast'
-import { onBeforeMount } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAccountStore } from '@/stores/account'
-const router = useRouter()
-const accountStore = useAccountStore();
+  TableRow,
+} from '@/components/ui/table'
 
-onBeforeMount(async() => {
-    const account = accountStore.getAccount();
-    console.log("account", account!.role);
-    if (!account?.role) {
-        console.log("account1", account);
-        const toastOptions: Toast = {
-            title: "Unauthorized",
-            description: "You are not authorized to access this page.",
-            type: "error",
-        }
-        useToastService().error(toastOptions);
-        router.push("/login");
-    }
-    if (account!.role === "User") {
-        const toastOptions: Toast = {
-            title: "Unauthorized",
-            description: "You are not authorized to access this page.",
-            type: "error",
-        }
-        useToastService().error(toastOptions);
-        router.push("/login");
-    }
-})
+import NavbarView from '@/views/Admin/NavbarView.vue'
 </script>
 
 <template>

@@ -60,6 +60,7 @@ onBeforeMount(async() => {
     }
 })
 
+
 </script>
 
 <template>
@@ -75,6 +76,7 @@ onBeforeMount(async() => {
                 <div class="w-full flex ">
                     <p class="w-1/3">Email:</p>
                     <p>{{ currentAccount.email }}</p>
+
                 </div>
                 <Dialog>
                     <DialogTrigger>
@@ -111,6 +113,7 @@ onBeforeMount(async() => {
                             <Input v-model="currentAccount.email" type="email" placeholder="Email" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
                             <Input v-model="currentAccount.password" type="password" placeholder="Password" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
                             <Input v-model="currentAccount.confirmPassword" type="password" placeholder="Confirm Password" class="h-15 bg-[#F5F5F5] text-black border-b-2 border-[#666E99]"/>
+
                         </div>
                         <DialogFooter>
                         <DialogClose class="bg-[#1A33C1] hover:bg-[#1A33C1]/90 cursor-pointer h-15 w-full text-md font-bold rounded-lg text-white">Save</DialogClose>
