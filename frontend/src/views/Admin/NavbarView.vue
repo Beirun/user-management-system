@@ -2,13 +2,19 @@
 import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
-
+import { useAccountStore } from '@/stores/account'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const accountStore = useAccountStore();
 const { logout } = useAccountService()
 const toast = useToastService()
+
 
 const handleLogout = async () => {
     try {
         await logout();
+        accountStore.logout();
+        router.push("/login");
         const toastOptions: Toast = {
             title: "Logout",
             description: "Logout successful",

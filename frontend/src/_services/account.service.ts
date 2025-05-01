@@ -6,7 +6,6 @@ import { environment } from '@/environments/environment';
 import { useAccountStore } from '@/stores/account';
 import { useToastService } from '@/_services/toast.service'; 
 import type { Toast } from '@/models/toast';
-
 type NewAccount = {
     title: string;
     firstName: string;
@@ -19,9 +18,10 @@ type NewAccount = {
 }
 
 export function useAccountService() {
+    const accountStore = useAccountStore();
     const toast = useToastService();
     const router = useRouter();
-    const account = ref<Account | null>(null);
+    const account = ref<Account | null>(accountStore.account);
     let refreshTokenTimeout: number | null = null;
 
     // Public computed property
@@ -38,7 +38,12 @@ export function useAccountService() {
         if (account.value?.jwtToken) {
             headers['Authorization'] = `Bearer ${account.value.jwtToken}`;
         }
-
+        console.log("Fetch Body:",{
+            method,
+            headers,
+            credentials: 'include',
+            body: body ? JSON.stringify(body) : undefined
+        })
         const response = await fetch(url, {
             method,
             headers,
@@ -95,13 +100,13 @@ export function useAccountService() {
 
     async function logout(): Promise<void> {
         try {
-            await fetchRequest('/revoke-token', 'POST', {});
+            const res = await fetchRequest('/revoke-token', 'POST', {});
+            console.log("res", res);   
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
             stopRefreshTokenTimer();
             account.value = null;
-            router.push('/login');
         }
     }
 
