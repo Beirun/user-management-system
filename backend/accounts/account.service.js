@@ -33,6 +33,11 @@ async function authenticate({ email, password, ipAddress }) {
         throw 'Email or password is incorrect';
     }
 
+    console.log('Login difference in days:', (Date.now() - account.lastLogin) / (1000 * 60 * 60 * 24));
+    if((Date.now() - account.lastLogin) / (1000 * 60 * 60 * 24) > 30 && account.status !== 'Active') {
+        account.status = 'Inactive';
+        throw 'Account inactive. Please contact Administrator.';
+    }
     account.lastLogin = Date.now();
     await account.save();
     // authentication successful so generate jwt and refresh tokens
@@ -268,8 +273,9 @@ function randomTokenString() {
 }
 
 function basicDetails(account) {
-    const { id, title, firstName, lastName, email, role, created, updated, isVerified } = account;
-    return { id, title, firstName, lastName, email, role, created, updated, isVerified };
+    console.log('Account details:', account);
+    const { id, title, firstName, lastName, email, role, created, updated, isVerified, status } = account;
+    return { id, title, firstName, lastName, email, role, created, updated, isVerified, status };
 }
 
 function generateJwtToken(account) {
