@@ -274,8 +274,8 @@ function randomTokenString() {
 
 function basicDetails(account) {
     console.log('Account details:', account);
-    const { id, title, firstName, lastName, email, role, created, updated, isVerified, status } = account;
-    return { id, title, firstName, lastName, email, role, created, updated, isVerified, status };
+    const { id, title, firstName, lastName, email, role, created, updated, isVerified, status, lastLogin } = account;
+    return { id, title, firstName, lastName, email, role, created, updated, isVerified, status, lastLogin };
 }
 
 function generateJwtToken(account) {
