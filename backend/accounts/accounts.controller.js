@@ -37,7 +37,6 @@ function isPasswordCorrect(req, res, next) {
     const { email, password } = req.body;
     accountService.isPasswordCorrect(email, password)
     .then((result) => {
-        console.log('Password correctness response:', result);
         res.json({ isCorrect: result.isCorrect });
     }).catch(next);
 }
@@ -46,7 +45,6 @@ function isEmailVerified(req, res, next) {
     const { email } = req.body;
     accountService.isEmailVerified(email)
     .then((acc) => {
-        console.log('Email verification response:', acc); // Log the response for debugging
         // Email verification logic here
         res.json({ isVerified: acc.isVerified, token: acc.token });
     }).catch(next);
@@ -95,7 +93,6 @@ function revokeToken(req, res, next) {
     // accept token from request body or cookie
     const token = req.body.token || req.cookies.refreshToken;
     const ipAddress = req.ip;
-    console.log('body:', req.body); // Log the token for debugging
     if (!token) return res.status(400).json({ message: 'Token is required' });
 
     // users can revoke their own tokens and admins can revoke any tokens
@@ -123,7 +120,6 @@ function registerSchema(req, res, next) {
 }
 
 function register(req, res, next) {
-    console.log('Registering user:', req.body); // Log the request body for debugging
     accountService.register(req.body, req.get('origin'))
         .then(() => res.json({ message: 'Registration successful, please check your email for verification instructions' }))
         .catch(next);
@@ -151,7 +147,8 @@ function forgotPasswordSchema(req, res, next) {
 
 function forgotPassword(req, res, next) {
     accountService.forgotPassword(req.body, req.get('origin'))
-        .then(() => res.json({ message: 'Please check your email for password reset instructions' }))
+        .then((c) => {
+            res.json({ url: c, message: 'Please check your email for password reset instructions' })})
         .catch(next);
 }
 

@@ -33,7 +33,6 @@ async function authenticate({ email, password, ipAddress }) {
         throw 'Email or password is incorrect';
     }
 
-    console.log('Login difference in days:', (Date.now() - account.lastLogin) / (1000 * 60 * 60 * 24));
     if((Date.now() - account.lastLogin) / (1000 * 60 * 60 * 24) > 30 && account.status !== 'Active') {
         account.status = 'Inactive';
         throw 'Account inactive. Please contact Administrator.';
@@ -162,6 +161,8 @@ async function forgotPassword({ email }, origin) {
     
     // send email
     await sendPasswordResetEmail(account, origin);
+    const resetUrl = `${origin}/account/reset-password?token=${account.resetToken}`;
+    return resetUrl;
 }
 
 async function validateResetToken({ token }) {
@@ -273,7 +274,6 @@ function randomTokenString() {
 }
 
 function basicDetails(account) {
-    console.log('Account details:', account);
     const { id, title, firstName, lastName, email, role, created, updated, isVerified, status, lastLogin } = account;
     return { id, title, firstName, lastName, email, role, created, updated, isVerified, status, lastLogin };
 }
