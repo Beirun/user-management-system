@@ -6,6 +6,7 @@ export type Toast = {
 
 export type ToastWithAction = {
     action: {
+        class:string;
         label: string;
         onClick: () => void;
     };
