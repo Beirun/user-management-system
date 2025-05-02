@@ -134,7 +134,7 @@ const toggleTheme = () => {
         <Input v-model="loginData.password" type="password" placeholder="Password" class="h-15" />
 
         <div class="w-full text-right italic">
-          <RouterLink to="/forgot-password">Forgot your password?</RouterLink>
+          <RouterLink class="hover:underline hover:text-primary transition-all duration-200" to="/forgot-password">Forgot your password?</RouterLink>
         </div>
         <Button
           @click="handleLogin"
@@ -143,7 +143,7 @@ const toggleTheme = () => {
         >
         <p>
           Don't have an account?
-          <RouterLink to="/register" class="text-primary">Register</RouterLink>
+          <RouterLink to="/register" class="text-primary hover:underline">Register</RouterLink>
         </p>
         <div class="absolute bottom-10 gap-4 flex items-center text-lg">
           <p>Change To {{ mode === 'dark' ? 'Light' : 'Dark' }} Mode</p>

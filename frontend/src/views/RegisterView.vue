@@ -170,7 +170,7 @@ const handleSubmit = async () => {
           >
           <div class="mt-3 self-center">
             <p>
-              Already have an account?<RouterLink to="/login" class="text-[#1A33C1]">
+              Already have an account?<RouterLink to="/login" class="text-primary hover:underline">
                 Login</RouterLink
               >
             </p>
