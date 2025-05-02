@@ -10,7 +10,7 @@ import router from './router'
 
 const app = createApp(App)
 
-// configureFakeBackend();
+configureFakeBackend();
 
 
 const pinia = createPinia()
