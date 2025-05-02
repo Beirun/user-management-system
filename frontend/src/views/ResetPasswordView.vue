@@ -65,12 +65,12 @@ const handleSubmit = async() => {
 </script>
 
 <template>
-    <div class="w-screen h-screen bg-[#15161E] flex flex-col  items-center font-sans">
+    <div class="w-screen h-screen flex flex-col  items-center font-sans">
         <div class="w-24/25 h-1/10 flex items-center">
-            <ArrowLeft color="white" :size="32" @click="$router.back()" class="cursor-pointer"/>
+            <ArrowLeft :color="mode !== 'dark' ? 'black': 'white'" :size="32" @click="$router.back()" class="cursor-pointer" />
         </div>
         <div class="w-full h-4/5 flex flex-col justify-center items-center">
-            <div class="w-2/7  p-10  rounded-2xl  text-[#E4E5E7] flex flex-col justify-center items-center gap-10">
+            <div class="w-2/7  p-10  rounded-2xl   flex flex-col justify-center items-center gap-10">
                 <p class="text-4xl font-extrabold">Reset Password</p>
                 <p class="text-md">Enter your new password</p>
                 <Input v-model="password" type="password" placeholder="New Password" class="h-15"/>
