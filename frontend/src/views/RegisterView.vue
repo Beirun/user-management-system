@@ -174,15 +174,15 @@ const handleSubmit = async () => {
                 Login</RouterLink
               >
             </p>
-            <div class="absolute bottom-10 gap-4 flex items-center">
+            <div class="absolute bottom-10 gap-4 flex items-center text-lg">
             <p>Change To {{ mode === 'dark' ? 'Light' : 'Dark' }} Mode</p>
             <Switch
               :checked="mode === 'dark'"
               @click="toggleTheme"
-              class="data-[state=checked]:bg-primary"
+              class="data-[state=checked]:bg-primary border-2 border-foreground "
             >
               <template #thumb>
-                <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary" />
+                <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary " />
                 <Moon v-else class="h-4 w-4 text-primary" />
               </template>
             </Switch>

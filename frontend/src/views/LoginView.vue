@@ -65,6 +65,7 @@ const handleLogin = async () => {
       description: 'Invalid email address. Please verify your email before logging in.',
       type: 'error',
       action: {
+        class:'button',
         label: 'Verify Email',
         onClick: () => {
           window.location.href = `http://localhost:5173/account/verify-email?token=${isVerified.token}`
@@ -144,12 +145,12 @@ const toggleTheme = () => {
           Don't have an account?
           <RouterLink to="/register" class="text-primary">Register</RouterLink>
         </p>
-        <div class="absolute bottom-10 gap-4 flex items-center">
+        <div class="absolute bottom-10 gap-4 flex items-center text-lg">
           <p>Change To {{ mode === 'dark' ? 'Light' : 'Dark' }} Mode</p>
           <Switch
             :checked="mode === 'dark'"
             @click="toggleTheme"
-            class="data-[state=checked]:bg-primary"
+            class="data-[state=checked]:bg-primary border-2 border-foreground "
           >
             <template #thumb>
               <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary" />
