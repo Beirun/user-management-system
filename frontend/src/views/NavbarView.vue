@@ -7,7 +7,8 @@ import { useAccountStore } from '@/stores/account'
 import { useRouter } from 'vue-router'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, LogOut, User } from 'lucide-vue-next'
+// Import new icons
+import { Sun, Moon, LogOut, User, Users, Building2, FileText } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
 
 const mode = useColorMode({ disableTransition: false })
@@ -67,24 +68,47 @@ const handleLogout = async () => {
       </div>
 
       <div class="flex items-center gap-2">
+        
+
+        <!-- Admin Specific Navigation Links -->
+        <template v-if="accountStore.account?.role === 'Admin'">
+          <RouterLink to="/admin/employees">
+            <Button variant="ghost" size="sm" class="gap-2">
+              <Users class="h-4 w-4" />
+              <span>Employees</span>
+            </Button>
+          </RouterLink>
+          <RouterLink to="/admin/departments">
+            <Button variant="ghost" size="sm" class="gap-2">
+              <Building2 class="h-4 w-4" />
+              <span>Departments</span>
+            </Button>
+          </RouterLink>
+          <RouterLink to="/admin/requests">
+            <Button variant="ghost" size="sm" class="gap-2">
+              <FileText class="h-4 w-4" />
+              <span>Requests</span>
+            </Button>
+          </RouterLink>
+        </template>
+        <!-- End Admin Specific Navigation Links -->
         <RouterLink to="/profile">
           <Button variant="ghost" size="sm" class="gap-2">
             <User class="h-4 w-4" />
             <span>Profile</span>
           </Button>
         </RouterLink>
-        
         <div class="flex items-center gap-2">
-          <Switch 
-            :checked="mode === 'dark'"
-            @click="toggleTheme"
-            class="data-[state=checked]:bg-primary"
-          >
-            <template #thumb>
-              <Sun v-if="mode==='light'" class="h-4 w-4 text-primary" />
-              <Moon v-else class="h-4 w-4 text-primary" />
-            </template>
-          </Switch>
+           <Switch
+              :checked="mode === 'dark'"
+              @click="toggleTheme"
+              class="data-[state=checked]:bg-primary border-2 border-foreground "
+            >
+              <template #thumb>
+                <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary " />
+                <Moon v-else class="h-4 w-4 text-primary" />
+              </template>
+            </Switch>
         </div>
 
         <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
@@ -94,4 +118,4 @@ const handleLogout = async () => {
       </div>
     </div>
   </header>
-</template> 
+</template>

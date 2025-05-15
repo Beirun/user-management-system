@@ -54,12 +54,13 @@ export function useAccountService() {
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
             const toastOptions: Toast = {
-                title: "Login Failed",
+                title: "Error",
                 description: error.message || 'An error occurred',
                 // description: endpoint === '/authenticate' || endpoint === '/is-email-verified'? "Incorrect Password":   error.description || 'An error occurred',
                 type: 'error'
             }
             toast.error(toastOptions);   
+            if(error.message === "Unauthorized") router.push('/login');
             throw new Error(error.message || 'Request failed');
         }
 

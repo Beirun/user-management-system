@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,12 +31,15 @@ import {
   Briefcase,
   UserCheck,
   UserX,
+  CalendarIcon,
+  Mail,
+  Phone,
 } from 'lucide-vue-next'
+import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 import NavbarView from '@/views/NavbarView.vue'
 import { onBeforeMount, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAccountStore } from '@/stores/account'
 import {
   Select,
   SelectContent,
@@ -49,6 +49,18 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 
+import {
+  type DateValue,
+  CalendarDate,
+  today,
+  parseDate as parseDateValue,
+  getLocalTimeZone,
+  DateFormatter,
+} from '@internationalized/date'
+
+// For optional display formatting using date-fns if preferred over DateFormatter for some cases
+import { format as formatDateFn_display_optional, parseISO, isValid as isValidJsDate } from 'date-fns'
+
 interface Employee {
   id: string
   firstName: string
@@ -57,21 +69,23 @@ interface Employee {
   employeeId: string
   position: string
   department: string
-  hireDate: string
+  hireDate: string // Stays as YYYY-MM-DD string
   email: string
   phone: string
   address: string
   status: 'active' | 'inactive' | 'on_leave'
 }
 
-const router = useRouter()
-const accountStore = useAccountStore()
 const employees = ref<Employee[]>([])
 const isLoading = ref(false)
 const searchQuery = ref('')
 const selectedEmployee = ref<Employee | null>(null)
 const isDialogOpen = ref(false)
 const isAddDialogOpen = ref(false)
+
+// For DatePickers - using DateValue
+const editHireDateForPicker = ref<DateValue | undefined>()
+const newHireDateForPicker = ref<DateValue | undefined>()
 
 const departmentOptions = [
   'Engineering',
@@ -83,6 +97,7 @@ const departmentOptions = [
   'Operations',
   'Customer Support',
   'Design',
+  'Analytics',
 ]
 
 const statusOptions = [
@@ -98,14 +113,13 @@ const newEmployee = ref<Omit<Employee, 'id'>>({
   employeeId: '',
   position: '',
   department: departmentOptions[0],
-  hireDate: new Date().toISOString().split('T')[0],
+  hireDate: today(getLocalTimeZone()).toString(), // Initial YYYY-MM-DD
   email: '',
   phone: '',
   address: '',
   status: 'active',
 })
 
-// Mock data for frontend display
 const mockEmployees: Employee[] = [
   {
     id: '1',
@@ -147,7 +161,21 @@ const mockEmployees: Employee[] = [
     email: 'robert.j@example.com',
     phone: '+1 (555) 456-7890',
     address: '789 Pine Rd, Nowhere, USA',
-    status: 'active',
+    status: 'on_leave',
+  },
+  {
+    id: '4',
+    title: 'Mrs',
+    firstName: 'Emily',
+    lastName: 'Davis',
+    employeeId: 'EMP-004',
+    position: 'UX Designer',
+    department: 'Design',
+    hireDate: '2022-08-10',
+    email: 'emily.d@example.com',
+    phone: '+1 (555) 234-5678',
+    address: '321 Birch Ln, Anytown, USA',
+    status: 'inactive',
   },
 ]
 
@@ -158,55 +186,65 @@ const filteredEmployees = computed(() => {
       employee.firstName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       employee.lastName.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       employee.position.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchQuery.value.toLowerCase()),
+      employee.department.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      employee.employeeId.toLowerCase().includes(searchQuery.value.toLowerCase()),
   )
 })
 
 const fetchEmployees = async () => {
+  isLoading.value = true
+  await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API
   employees.value = mockEmployees
+  isLoading.value = false
 }
 
 const openEmployeeDetails = (employee: Employee) => {
   selectedEmployee.value = { ...employee }
+  try {
+    editHireDateForPicker.value = employee.hireDate ? parseDateValue(employee.hireDate) : undefined
+  } catch (e) {
+    console.warn("Failed to parse employee hire date for picker:", employee.hireDate, e);
+    editHireDateForPicker.value = undefined;
+  }
   isDialogOpen.value = true
 }
 
 const saveChanges = () => {
   if (selectedEmployee.value) {
     employees.value = employees.value.map((emp) =>
-      emp.id === selectedEmployee.value!.id ? selectedEmployee.value! : emp,
+      emp.id === selectedEmployee.value!.id ? { ...selectedEmployee.value! } : emp,
     )
     useToastService().success({
       title: 'Success',
       description: 'Employee updated successfully',
-      type: 'success',
     })
     isDialogOpen.value = false
+    selectedEmployee.value = null
   }
 }
 
-const addNewEmployee = () => {
-  const newId = (employees.value.length + 1).toString()
+const openAddEmployeeDialog = () => {
+  resetNewEmployeeForm()
+  isAddDialogOpen.value = true
+}
 
+const addNewEmployee = () => {
+  const newId = `EMP-${String(employees.value.length + 10).padStart(3, '0')}`
   const employeeToAdd: Employee = {
     id: newId,
     ...newEmployee.value,
   }
-
   employees.value = [...employees.value, employeeToAdd]
-
-  resetNewEmployeeForm()
-
   isAddDialogOpen.value = false
-
   useToastService().success({
     title: 'Success',
     description: 'Employee added successfully',
-    type: 'success',
   })
 }
 
 const resetNewEmployeeForm = () => {
+  const currentLocalDate = today(getLocalTimeZone())
   newEmployee.value = {
     firstName: '',
     lastName: '',
@@ -214,28 +252,46 @@ const resetNewEmployeeForm = () => {
     employeeId: '',
     position: '',
     department: departmentOptions[0],
-    hireDate: new Date().toISOString().split('T')[0],
+    hireDate: currentLocalDate.toString(),
     email: '',
     phone: '',
     address: '',
     status: 'active',
   }
+  newHireDateForPicker.value = currentLocalDate
 }
 
 onBeforeMount(async () => {
   await fetchEmployees()
 })
 
-function formatDate(dateString: string): string {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' }
-  return new Date(dateString).toLocaleDateString(undefined, options)
+const dateFormatter = new DateFormatter(navigator.language || 'en-US', { dateStyle: 'medium' })
+
+function formatDisplayDate(dateString: string): string {
+  if (!dateString) return 'N/A'
+  try {
+    const dateVal = parseDateValue(dateString)
+    return dateFormatter.format(dateVal.toDate(getLocalTimeZone()))
+  } catch (e) {
+     // Fallback for display if needed, e.g. using date-fns
+    if (isValidJsDate(parseISO(dateString))) {
+        return formatDateFn_display_optional(parseISO(dateString), 'MMM d, yyyy');
+    }
+    console.warn("Failed to parse/format date string for display:", dateString, e);
+    return 'Invalid Date';
+  }
 }
 
-// Mock toast service for frontend-only
 const useToastService = () => ({
-  success: (toast: any) => console.log('Toast:', toast),
-  error: (toast: any) => console.error('Toast Error:', toast),
+  success: (toast: {title: string, description: string}) => console.log('Toast Success:', toast.title, toast.description),
+  error: (toast: {title: string, description: string}) => console.error('Toast Error:', toast.title, toast.description),
 })
+
+const getAvatarFallback = (firstName?: string, lastName?: string) => {
+  const fn = firstName || ''
+  const ln = lastName || ''
+  return `${fn.charAt(0)}${ln.charAt(0)}`.toUpperCase() || `<Briefcase class="h-8 w-8" />`
+}
 </script>
 
 <template>
@@ -259,121 +315,151 @@ const useToastService = () => ({
             </div>
 
             <div class="flex gap-2">
-              <Button variant="outline" size="sm" @click="fetchEmployees">
-                <RefreshCw class="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" @click="fetchEmployees" :disabled="isLoading">
+                <RefreshCw class="mr-2 h-4 w-4" :class="{'animate-spin': isLoading}" />
                 Refresh
               </Button>
-              <Button size="sm" @click="isAddDialogOpen = true">
+              <Button size="sm" @click="openAddEmployeeDialog">
                 <UserPlus class="mr-2 h-4 w-4" />
                 Add Employee
               </Button>
             </div>
           </div>
 
-          <div
-            v-if="filteredEmployees.length === 0"
-            class="flex flex-col items-center justify-center py-12 gap-4"
-          >
-            <div class="text-center space-y-2">
-              <h3 class="text-lg font-medium">No employees found</h3>
-              <p class="text-sm text-muted-foreground">
-                Try adjusting your search or add a new employee
-              </p>
+          <!-- Loading State -->
+          <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div v-for="i in 4" :key="`skel-${i}`" class="border rounded-lg p-4 bg-card flex flex-col">
+              <div class="flex items-start gap-4 mb-4">
+                <Skeleton class="h-16 w-16 rounded-full" />
+                <div class="flex-1 space-y-2 pt-1">
+                  <Skeleton class="h-5 w-3/4" />
+                  <Skeleton class="h-4 w-1/2" />
+                  <Skeleton class="h-3 w-1/4" />
+                </div>
+                <Skeleton class="h-8 w-8 rounded-md" />
+              </div>
+              <div class="space-y-2 text-sm mb-4 flex-grow">
+                <div class="flex items-center gap-2"> <Skeleton class="h-4 w-4" /> <Skeleton class="h-4 w-2/3" /> </div>
+                <div class="flex items-center gap-2"> <Skeleton class="h-4 w-4" /> <Skeleton class="h-4 w-1/2" /> </div>
+                <div class="flex items-center gap-2"> <Skeleton class="h-6 w-20 rounded-md" /></div>
+              </div>
             </div>
           </div>
 
-          <div v-else class="grid grid-cols-1 gap-4">
-            <div class="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Hire Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead class="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="employee in filteredEmployees" :key="employee.id">
-                    <TableCell class="font-medium">{{ employee.employeeId }}</TableCell>
-                    <TableCell>{{ employee.email }}</TableCell>
-                    <TableCell>{{ employee.position }}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" class="capitalize">
-                        {{ employee.department }}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{{ formatDate(employee.hireDate) }}</TableCell>
-                    <TableCell>
-                      <Badge
-                        :variant="employee.status === 'active' ? 'default' : 'outline'"
-                        :class="{
-                          'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
-                            employee.status === 'active',
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
-                            employee.status === 'inactive',
-                          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200':
-                            employee.status === 'on_leave',
-                        }"
-                        class="capitalize"
-                      >
-                        {{ statusOptions.find((s) => s.value === employee.status)?.label }}
-                      </Badge>
-                    </TableCell>
-                    <TableCell class="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger as-child>
-                          <Button variant="ghost" class="h-8 w-8 p-0">
-                            <MoreHorizontal class="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem @click="() => {}">
-                            <UserCheck class="mr-2 h-4 w-4" />
-                            Requests
-                          </DropdownMenuItem>
-                          <DropdownMenuItem @click="() => {}">
-                            <RefreshCw class="mr-2 h-4 w-4" />
-                            Workflows
-                          </DropdownMenuItem>
-                          <DropdownMenuItem @click="() => {}">
-                            <UserX class="mr-2 h-4 w-4" />
-                            Transfer
-                          </DropdownMenuItem>
-                          <DropdownMenuItem @click="openEmployeeDetails(employee)">
-                            <User class="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+          <!-- Empty State -->
+          <div
+            v-else-if="filteredEmployees.length === 0"
+            class="flex flex-col items-center justify-center py-12 gap-4 text-center"
+          >
+            <Briefcase class="h-16 w-16 text-muted-foreground" />
+            <h3 class="text-xl font-medium">No employees found</h3>
+            <p class="text-sm text-muted-foreground">
+              Try adjusting your search criteria or add a new employee.
+            </p>
+          </div>
+
+          <!-- Card Grid -->
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div
+              v-for="employee in filteredEmployees"
+              :key="employee.id"
+              class="border bg-card text-card-foreground rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 flex flex-col"
+            >
+              <div class="flex items-start gap-4 mb-4">
+                <Avatar class="h-16 w-16 text-xl bg-muted border">
+                  <AvatarFallback>
+                    {{ getAvatarFallback(employee.firstName, employee.lastName) }}
+                  </AvatarFallback>
+                </Avatar>
+                <div class="flex-1 space-y-0.5">
+                  <h3 class="font-semibold text-lg leading-tight">
+                    {{ employee.title }} {{ employee.firstName }} {{ employee.lastName }}
+                  </h3>
+                  <p class="text-sm text-primary">{{ employee.position }}</p>
+                  <p class="text-xs text-muted-foreground">{{ employee.employeeId }}</p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger as-child>
+                    <Button variant="ghost" class="h-8 w-8 p-0 self-start text-muted-foreground hover:text-foreground">
+                      <MoreHorizontal class="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" class="w-48">
+                    <DropdownMenuItem @click="openEmployeeDetails(employee)">
+                      <User class="mr-2 h-4 w-4" />
+                      <span>Edit Details</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click="() => {}">
+                      <UserCheck class="mr-2 h-4 w-4" />
+                      <span>View Requests</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click="() => {}">
+                      <RefreshCw class="mr-2 h-4 w-4" />
+                      <span>Manage Workflows</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem @click="() => {}" class="text-destructive focus:text-destructive focus:bg-destructive/10">
+                      <UserX class="mr-2 h-4 w-4" />
+                      <span>Initiate Transfer</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <div class="space-y-2.5 text-sm mb-4 flex-grow">
+                <div class="flex items-center">
+                  <Briefcase class="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span class="truncate" :title="employee.department">Dept: {{ employee.department }}</span>
+                </div>
+                <div class="flex items-center">
+                  <CalendarIcon class="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span>Hired: {{ formatDisplayDate(employee.hireDate) }}</span>
+                </div>
+                 <div class="flex items-center">
+                  <Mail class="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <a :href="'mailto:'+employee.email" class="truncate text-primary hover:underline" :title="employee.email">{{ employee.email }}</a>
+                </div>
+                <div v-if="employee.phone" class="flex items-center">
+                  <Phone class="mr-2 h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span class="truncate">{{ employee.phone }}</span>
+                </div>
+              </div>
+
+              <div class="mt-auto pt-3 border-t">
+                <Badge
+                  :variant="employee.status === 'active' ? 'default' : 'outline'"
+                  :class="{
+                    'bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400 border-green-500/30': employee.status === 'active',
+                    'bg-red-500/10 text-red-700 dark:bg-red-500/20 dark:text-red-400 border-red-500/30': employee.status === 'inactive',
+                    'bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 border-yellow-500/30': employee.status === 'on_leave',
+                  }"
+                  class="capitalize text-xs px-2 py-0.5"
+                >
+                  {{ statusOptions.find((s) => s.value === employee.status)?.label }}
+                </Badge>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </main>
 
+    <!-- Edit Employee Dialog -->
     <Dialog v-model:open="isDialogOpen">
       <DialogContent class="sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
+          <DialogDescription>Update the employee's information.</DialogDescription>
         </DialogHeader>
-        <div v-if="selectedEmployee" class="grid gap-10 py-4">
+        <div v-if="selectedEmployee" class="grid gap-6 py-4">
           <div class="flex items-center gap-4">
-            <Avatar class="h-16 w-16 bg-muted">
-              <AvatarFallback class="text-muted-foreground">
-                <Briefcase class="h-8 w-8" />
+            <Avatar class="h-16 w-16 bg-muted border">
+              <AvatarFallback>
+                {{ getAvatarFallback(selectedEmployee.firstName, selectedEmployee.lastName) }}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 class="text-lg font-medium">
-                {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}
+              <h3 class="text-lg font-semibold">
+                {{ selectedEmployee.title }} {{ selectedEmployee.firstName }} {{ selectedEmployee.lastName }}
               </h3>
               <p class="text-sm text-muted-foreground">
                 {{ selectedEmployee.position }} • {{ selectedEmployee.department }}
@@ -381,14 +467,12 @@ const useToastService = () => ({
             </div>
           </div>
 
-          <div class="grid gap-8">
-            <div class="grid grid-cols-5 gap-4">
-              <div class="space-y-1 col-span-1">
-                <Label for="title">Title</Label>
-                <Select id="title" v-model="selectedEmployee.title">
-                  <SelectTrigger class="h-8 w-full">
-                    <SelectValue placeholder="Title" />
-                  </SelectTrigger>
+          <div class="grid gap-4 max-h-[60vh] overflow-y-auto pr-3 -mr-3"> {/* Added scroll padding */}
+            <div class="grid grid-cols-5 gap-4 items-end">
+              <div class="space-y-1.5 col-span-1">
+                <Label for="edit-title">Title</Label>
+                <Select id="edit-title" v-model="selectedEmployee.title">
+                  <SelectTrigger><SelectValue placeholder="Title" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Mr">Mr</SelectItem>
                     <SelectItem value="Mrs">Mrs</SelectItem>
@@ -397,183 +481,211 @@ const useToastService = () => ({
                   </SelectContent>
                 </Select>
               </div>
-              <div class="space-y-1 col-span-2">
-                <Label for="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  v-model="selectedEmployee.firstName"
-                  placeholder="First name"
-                />
+              <div class="space-y-1.5 col-span-2">
+                <Label for="edit-firstName">First Name</Label>
+                <Input id="edit-firstName" v-model="selectedEmployee.firstName" placeholder="John" />
               </div>
-              <div class="space-y-1 col-span-2">
-                <Label for="lastName">Last Name</Label>
-                <Input id="lastName" v-model="selectedEmployee.lastName" placeholder="Last name" />
+              <div class="space-y-1.5 col-span-2">
+                <Label for="edit-lastName">Last Name</Label>
+                <Input id="edit-lastName" v-model="selectedEmployee.lastName" placeholder="Doe" />
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <Label for="employeeId">Employee ID</Label>
-                <Input
-                  id="employeeId"
-                  v-model="selectedEmployee.employeeId"
-                  placeholder="Employee ID"
-                />
+              <div class="space-y-1.5">
+                <Label for="edit-employeeId">Employee ID</Label>
+                <Input id="edit-employeeId" v-model="selectedEmployee.employeeId" placeholder="EMP-001" />
               </div>
-              <div class="space-y-1">
-                <Label for="hireDate">Hire Date</Label>
-                <Input
-                  id="hireDate"
-                  v-model="selectedEmployee.hireDate"
-                  type="date"
-                  placeholder="Hire Date"
-                />
+              <div class="space-y-1.5">
+                <Label for="edit-hireDate">Hire Date</Label>
+                <Popover>
+                  <PopoverTrigger as-child>
+                    <Button
+                      variant="outline"
+                      :class="cn(
+                        'w-full justify-start text-left font-normal',
+                        !editHireDateForPicker && 'text-muted-foreground',
+                      )"
+                    >
+                      <CalendarIcon class="mr-2 h-4 w-4" />
+                      {{ editHireDateForPicker ? dateFormatter.format(editHireDateForPicker.toDate(getLocalTimeZone())) : "Pick a date" }}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-auto p-0">
+                    <Calendar
+                      v-model="editHireDateForPicker"
+                      @update:model-value="(dateVal: DateValue | undefined) => {
+                        if (selectedEmployee) {
+                          selectedEmployee.hireDate = dateVal ? dateVal.toString() : '';
+                        }
+                      }"
+                      initial-focus
+                      :min-value="parseDateValue('1900-01-01')"
+                      :max-value="today(getLocalTimeZone()).add({ years: 5 })"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <Label for="department">Department</Label>
-                <Select v-model="selectedEmployee.department">
-                  <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
+             <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <Label for="edit-department">Department</Label>
+                <Select id="edit-department" v-model="selectedEmployee.department">
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem v-for="dept in departmentOptions" :key="dept" :value="dept">
-                      {{ dept }}
+                    <SelectItem v-for="dept in departmentOptions" :key="dept" :value="dept">{{ dept }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-1.5">
+                <Label for="edit-position">Position</Label>
+                <Input id="edit-position" v-model="selectedEmployee.position" placeholder="Software Engineer" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1.5">
+                <Label for="edit-email">Email</Label>
+                <Input id="edit-email" v-model="selectedEmployee.email" type="email" placeholder="john.doe@example.com" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="edit-phone">Phone</Label>
+                <Input id="edit-phone" v-model="selectedEmployee.phone" placeholder="+1 (555) 123-4567" />
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="edit-address">Address</Label>
+              <Input id="edit-address" v-model="selectedEmployee.address" placeholder="123 Main St, Anytown, USA" />
+            </div>
+             <div class="space-y-1.5">
+                <Label for="edit-status">Status</Label>
+                <Select id="edit-status" v-model="selectedEmployee.status">
+                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="statusOpt in statusOptions" :key="statusOpt.value" :value="statusOpt.value">
+                      {{ statusOpt.label }}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div class="space-y-1">
-                <Label for="position">Position</Label>
-                <Input id="position" v-model="selectedEmployee.position" placeholder="Position" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <Label for="email">Email</Label>
-                <Input
-                  id="email"
-                  v-model="selectedEmployee.email"
-                  type="email"
-                  placeholder="Email"
-                />
-              </div>
-              <div class="space-y-1">
-                <Label for="phone">Phone</Label>
-                <Input id="phone" v-model="selectedEmployee.phone" placeholder="Phone number" />
-              </div>
-            </div>
-
-            <div class="space-y-1">
-              <Label for="status">Status</Label>
-              <Select v-model="selectedEmployee.status">
-                <SelectTrigger class="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="status in statusOptions"
-                    :key="status.value"
-                    :value="status.value"
-                  >
-                    {{ status.label }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div class="space-y-1">
-              <Label for="address">Address</Label>
-              <Input id="address" v-model="selectedEmployee.address" placeholder="Address" />
-            </div>
           </div>
 
-          <div class="flex justify-end gap-2 pt-4">
+          <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isDialogOpen = false">Cancel</Button>
-            <Button @click="saveChanges">Save changes</Button>
+            <Button @click="saveChanges">Save Changes</Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
 
+    <!-- Add New Employee Dialog -->
     <Dialog v-model:open="isAddDialogOpen">
-      <DialogContent class="sm:max-w-[500px]">
+      <DialogContent class="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle>Add New Employee</DialogTitle>
-          <DialogDescription> Enter the required employee information </DialogDescription>
+          <DialogDescription>Enter the required employee information.</DialogDescription>
         </DialogHeader>
-        <div class="grid gap-4 py-4">
-          <div class="space-y-1">
-            <Label for="new-employeeId">Employee ID</Label>
-            <Input
-              id="new-employeeId"
-              v-model="newEmployee.employeeId"
-              placeholder="Enter employee ID"
-              required
-            />
+        <div class="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-3 -mr-3"> {/* Added scroll padding */}
+          <div class="space-y-1.5">
+            <Label for="new-title">Title</Label>
+            <Select id="new-title" v-model="newEmployee.title">
+                <SelectTrigger><SelectValue placeholder="Title" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mr">Mr</SelectItem>
+                  <SelectItem value="Mrs">Mrs</SelectItem>
+                  <SelectItem value="Ms">Ms</SelectItem>
+                  <SelectItem value="Dr">Dr</SelectItem>
+                </SelectContent>
+            </Select>
+          </div>
+           <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <Label for="new-firstName">First Name *</Label>
+              <Input id="new-firstName" v-model="newEmployee.firstName" placeholder="Enter first name" required />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="new-lastName">Last Name *</Label>
+              <Input id="new-lastName" v-model="newEmployee.lastName" placeholder="Enter last name" required />
+            </div>
           </div>
 
-          <div class="space-y-1">
-            <Label for="new-account">Account</Label>
-            <Select v-model="newEmployee.email" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select account type" />
-              </SelectTrigger>
+          <div class="space-y-1.5">
+            <Label for="new-employeeId">Employee ID *</Label>
+            <Input id="new-employeeId" v-model="newEmployee.employeeId" placeholder="Enter employee ID (e.g., EMP-123)" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <Label for="new-email">Email Address *</Label>
+            <Input id="new-email" v-model="newEmployee.email" type="email" placeholder="employee@example.com" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <Label for="new-position">Position *</Label>
+            <Input id="new-position" v-model="newEmployee.position" placeholder="Enter position" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <Label for="new-department">Department *</Label>
+            <Select id="new-department" v-model="newEmployee.department" required>
+              <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin@company.com">Admin User (admin@company.com)</SelectItem>
-                <SelectItem value="employee@company.com"
-                  >Employee User (employee@company.com)</SelectItem
-                >
+                <SelectItem v-for="dept in departmentOptions" :key="dept" :value="dept">{{ dept }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div class="space-y-1">
-            <Label for="new-position">Position</Label>
-            <Input
-              id="new-position"
-              v-model="newEmployee.position"
-              placeholder="Enter position"
-              required
-            />
+          <div class="space-y-1.5">
+            <Label for="new-hireDate">Hire Date *</Label>
+             <Popover>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="outline"
+                    :class="cn(
+                      'w-full justify-start text-left font-normal',
+                      !newHireDateForPicker && 'text-muted-foreground',
+                    )"
+                  >
+                    <CalendarIcon class="mr-2 h-4 w-4" />
+                    {{ newHireDateForPicker ? dateFormatter.format(newHireDateForPicker.toDate(getLocalTimeZone())) : "Pick a date" }}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-auto p-0">
+                  <Calendar
+                    v-model="newHireDateForPicker"
+                     @update:model-value="(dateVal: DateValue | undefined) => {
+                        newEmployee.hireDate = dateVal ? dateVal.toString() : '';
+                      }"
+                    initial-focus
+                    :min-value="parseDateValue('1900-01-01')"
+                    :max-value="today(getLocalTimeZone()).add({ years: 5 })"
+                  />
+                </PopoverContent>
+              </Popover>
           </div>
 
-          <div class="space-y-1">
-            <Label for="new-department">Department</Label>
-            <Select v-model="newEmployee.department" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="dept in departmentOptions" :key="dept" :value="dept">
-                  {{ dept }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          <div class="space-y-1.5">
+            <Label for="new-phone">Phone Number</Label>
+            <Input id="new-phone" v-model="newEmployee.phone" placeholder="Enter phone number" />
+          </div>
+          <div class="space-y-1.5">
+            <Label for="new-address">Address</Label>
+            <Input id="new-address" v-model="newEmployee.address" placeholder="Enter address" />
           </div>
 
-          <div class="space-y-1">
-            <Label for="new-hireDate">Hire Date</Label>
-            <Input id="new-hireDate" v-model="newEmployee.hireDate" type="date" required />
-          </div>
-
-          <div class="space-y-1">
-            <Label for="new-status">Status</Label>
-            <Select v-model="newEmployee.status" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
+          <div class="space-y-1.5">
+            <Label for="new-status">Status *</Label>
+            <Select id="new-status" v-model="newEmployee.status" required>
+              <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="on_leave">On Leave</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div class="flex justify-end gap-2 pt-4">
+          <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isAddDialogOpen = false">Cancel</Button>
             <Button @click="addNewEmployee">Add Employee</Button>
           </div>
