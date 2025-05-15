@@ -347,7 +347,7 @@ onBeforeMount(async () => {
                 <Input id="lastName" v-model="selectedAccount.lastName" placeholder="Last name" />
               </div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-4 gap-4">
               <div class="space-y-1 col-span-2">
                 <Label for="email">Email</Label>
                 <Input
@@ -356,6 +356,18 @@ onBeforeMount(async () => {
                   type="email"
                   placeholder="Email"
                 />
+              </div>
+              <div class="space-y-1 col-span-1">
+                <Label for="role">Role</Label>
+                <Select id="role"  v-model="selectedAccount.role">
+                  <SelectTrigger class="h-8 w-full">
+                    <SelectValue placeholder="Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="User">User</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="status">Status</Label>
