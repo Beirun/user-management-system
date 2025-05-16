@@ -6,6 +6,8 @@ import { environment } from '@/environments/environment';
 import { useAccountStore } from '@/stores/account';
 import { useToastService } from '@/_services/toast.service'; 
 import type { Toast } from '@/models/toast';
+import dotenv from 'dotenv';
+dotenv.config();
 type NewAccount = {
     title: string;
     firstName: string;
@@ -29,7 +31,7 @@ export function useAccountService() {
 
     // Base fetch function with common request handling
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${environment.apiUrl}/accounts${endpoint}`;
+        const url = `${process.env.BACKEND_URL ?? environment.apiUrl}/accounts${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
