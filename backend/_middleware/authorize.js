@@ -1,7 +1,7 @@
 const { expressjwt: jwt } = require("express-jwt");
-const { secret } = require('../config.json');
 const db = require('../_helpers/db');
-
+const dotenv = require('dotenv');
+dotenv.config();
 module.exports = authorize;
 
 function authorize(roles = []) {
@@ -12,7 +12,7 @@ function authorize(roles = []) {
     return [
         // JWT middleware with proper configuration
         jwt({
-            secret,
+            secret: process.env.JWT_SECRET,
             algorithms: ['HS256'],
             credentialsRequired: true,
             requestProperty: 'auth' // Store decoded token in req.auth
