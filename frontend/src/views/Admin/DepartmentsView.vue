@@ -175,8 +175,8 @@ onBeforeMount(() => {
                 <RefreshCw class="mr-2 h-4 w-4" :class="{'animate-spin': isLoading}" />
                 Refresh
               </Button>
-              <Button size="sm" @click="openAddDepartmentDialog">
-                <Plus class="mr-2 h-4 w-4" />
+              <Button size="sm" @click="openAddDepartmentDialog" class="text-foreground">
+                <Plus class="mr-2 h-4 w-4 text-foreground" />
                 Add Department
               </Button>
             </div>
@@ -309,7 +309,7 @@ onBeforeMount(() => {
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isDialogOpen = false">Cancel</Button>
-            <Button @click="saveChanges">Save Changes</Button>
+            <Button @click="saveChanges" class="text-foreground">Save Changes</Button>
           </div>
         </div>
       </DialogContent>
