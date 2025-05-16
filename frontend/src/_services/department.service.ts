@@ -6,8 +6,6 @@ import { environment } from '@/environments/environment';
 import { useAccountService } from '@/_services/account.service'; // To get token
 import { useToastService } from '@/_services/toast.service';
 import type { Toast } from '@/models/toast';
-import dotenv from 'dotenv';
-dotenv.config();
 export function useDepartmentService() {
     const accountService = useAccountService(); // To access account.value for token
     const toast = useToastService();
@@ -15,7 +13,7 @@ export function useDepartmentService() {
 
     // Base fetch function (adapted from account.service.ts)
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${process.env.BACKEND_URL ?? environment.apiUrl}/departments${endpoint}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl}/departments${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };

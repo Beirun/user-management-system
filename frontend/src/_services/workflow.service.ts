@@ -14,15 +14,13 @@ import { environment } from '@/environments/environment';
 import { useAccountService } from '@/_services/account.service';
 import { useToastService } from '@/_services/toast.service';
 import type { Toast } from '@/models/toast';
-import dotenv from 'dotenv';
-dotenv.config();
 export function useWorkflowService() {
     const accountService = useAccountService();
     const toast = useToastService();
     const router = useRouter(); // Included for consistency
 
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${process.env.BACKEND_URL ?? environment.apiUrl}/workflows${endpoint}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl}/workflows${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
