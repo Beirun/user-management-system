@@ -1,4 +1,3 @@
-const config = require('config.json');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require("crypto");
@@ -6,7 +5,8 @@ const { Op } = require('sequelize');
 const sendEmail = require('../_helpers/send-email');
 const db = require('../_helpers/db');
 const Role = require('../_helpers/role');
-
+const dotenv = require('dotenv');
+dotenv.config();
 module.exports = {
     authenticate,
     refreshToken,
@@ -256,7 +256,7 @@ async function hash(password) {
 
 function generateJwtToken(account) {
     // create a jwt token containing the account id that expires in 15 minutes
-    return jwt.sign({ sub: account.id, id: account.id }, config.secret, { expiresIn: '15m' });
+    return jwt.sign({ sub: account.id, id: account.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
 }
 
 function generateRefreshToken(account, ipAddress) {
@@ -286,7 +286,7 @@ function generateJwtToken(account) {
             id: account.id,   // Duplicate for easier access
             role: account.role // Include role for authorization
         },
-        config.secret,
+        process.env.JWT_SECRET,
         { expiresIn: '15m' }
     );
 }
