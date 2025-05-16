@@ -2,13 +2,14 @@
 import { environment } from '@/environments/environment';
 import { useAccountService } from '@/_services/account.service';
 import { ref } from 'vue';
-
+import dotenv from 'dotenv';
+dotenv.config();
 export function useHttpService() {
   const accountService = useAccountService();
   const isLoading = ref(false);
   const error = ref<Error | null>(null);
 
-  const baseUrl = environment.apiUrl;
+  const baseUrl = process.env.BACKEND_URL ?? environment.apiUrl;
 
   async function request<T>(url: string, config: RequestInit = {}): Promise<T> {
     isLoading.value = true;
