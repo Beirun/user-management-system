@@ -72,6 +72,12 @@ const handleLogout = async () => {
 
         <!-- Admin Specific Navigation Links -->
         <template v-if="accountStore.account?.role === 'Admin'">
+          <RouterLink to="/admin/users">
+            <Button variant="ghost" size="sm" class="gap-2">
+              <Users class="h-4 w-4" />
+              <span>Accounts</span>
+            </Button>
+          </RouterLink>
           <RouterLink to="/admin/employees">
             <Button variant="ghost" size="sm" class="gap-2">
               <Users class="h-4 w-4" />

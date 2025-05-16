@@ -59,8 +59,32 @@ async function transferDepartment(params){
 }
 
 async function requestItem(params){
-    const workflow = new db.Workflow({employeeId: params.employeeId, type: 'Request Approval', details: `Employee requested ${params.quantity} ${params.name}${params.quantity > 1? 's':''}`});
-    await workflow.save();
+    if (!Array.isArray(params.items)) {
+    throw new Error('Items must be provided as an array');
+  }
+
+  // Handle empty array case
+  if (params.items.length === 0) {
+    throw new Error('At least one item must be provided');
+  }
+
+  // Create a grammatically correct summary of all requested items
+  const itemSummary = params.items.map((item, index) => {
+    const prefix = index === params.items.length - 1 && params.items.length > 1 
+      ? 'and ' 
+      : '';
+    return `${prefix}${item.quantity} ${item.name}${item.quantity > 1 ? 's' : ''}`;
+  }).join(params.items.length > 1 ? ', ' : ' ');
+
+  const workflow = new db.Workflow({
+    employeeId: params.employeeId,
+    type: 'Request Approval',
+    details: `Employee requested ${itemSummary}`,
+    items: params.items // Store the full items array if needed
+  });
+
+  await workflow.save();
+  return workflow;
 }
 
 async function requestLeave(params){

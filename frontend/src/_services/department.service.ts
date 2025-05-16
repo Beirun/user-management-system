@@ -38,6 +38,8 @@ export function useDepartmentService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Department request failed');
         }
         // For POST/PUT/DELETE that return { message: '...' } on success

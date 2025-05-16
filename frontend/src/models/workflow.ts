@@ -21,11 +21,7 @@ export type NewWorkflowPayload = {
 // For the PUT /workflows/:id endpoint
 // Based on your Joi schema in workflows.controller.js updateSchema
 export type UpdateWorkflowPayload = {
-    type?: 'Leave Request' | 'Equipment Request' | 'Department Change' | 'Other' | string;
-    details?: string | null;
-    status?: 'ForReviewing' | 'Completed' | string;
-    comments?: string | null;
-    handledBy?: number | null;
+    status?: string;
 };
 
 // Specific payloads for specialized workflow creation routes
@@ -48,6 +44,8 @@ export type LeaveWorkflowPayload = {
 
 export type ResourcesWorkflowPayload = {
     employeeId: number;
-    name: string;
-    quantity: number;
+    items: {
+        name: string;
+        quantity: number;
+    }[]
 };
