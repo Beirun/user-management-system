@@ -15,15 +15,19 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Search, Plus, RefreshCw, Briefcase, Pencil } from 'lucide-vue-next'
 import NavbarView from '@/views/NavbarView.vue'
 import { ref, computed, onBeforeMount } from 'vue'
-
-interface Department {
-  id: string
-  name: string
-  description: string
-  employeeCount: number
-  createdAt: string
-}
-
+import type { Department, NewDepartment } from '@/models/department'
+import { useDepartmentService } from '@/_services/department.service'
+import { useToastService } from '@/_services/toast.service'
+import type { Toast } from '@/models/toast'
+// interface Department {
+//   id: string
+//   name: string
+//   description: string
+//   employeeCount: number
+//   createdAt: string
+// }
+const toast = useToastService();
+const departmentService = useDepartmentService();
 const departments = ref<Department[]>([])
 const isLoading = ref(false)
 const searchQuery = ref('')
@@ -31,55 +35,55 @@ const selectedDepartment = ref<Department | null>(null)
 const isDialogOpen = ref(false)
 const isAddDialogOpen = ref(false)
 
-const newDepartment = ref<Omit<Department, 'id' | 'employeeCount' | 'createdAt'>>({
+const newDepartment = ref<NewDepartment>({
   name: '',
   description: '',
 })
 
-const mockDepartments: Department[] = [
-  {
-    id: '1',
-    name: 'Engineering',
-    description: 'Responsible for product development and technical solutions',
-    employeeCount: 42,
-    createdAt: '2020-05-15',
-  },
-  {
-    id: '2',
-    name: 'Marketing',
-    description: 'Handles brand promotion and customer acquisition',
-    employeeCount: 18,
-    createdAt: '2020-06-20',
-  },
-  {
-    id: '3',
-    name: 'Human Resources',
-    description: 'Manages recruitment, benefits, and employee relations',
-    employeeCount: 8,
-    createdAt: '2020-04-10',
-  },
-  {
-    id: '4',
-    name: 'Finance',
-    description: 'Oversees budgeting, accounting, and financial planning',
-    employeeCount: 12,
-    createdAt: '2020-07-05',
-  },
-  {
-    id: '5',
-    name: 'Product',
-    description: 'Defines product strategy and roadmap',
-    employeeCount: 15,
-    createdAt: '2021-01-12',
-  },
-  {
-    id: '6',
-    name: 'Customer Support',
-    description: 'Provides assistance and resolves customer issues',
-    employeeCount: 24,
-    createdAt: '2020-08-30',
-  },
-]
+// const mockDepartments: Department[] = [
+//   {
+//     id: '1',
+//     name: 'Engineering',
+//     description: 'Responsible for product development and technical solutions',
+//     employeeCount: 42,
+//     createdAt: '2020-05-15',
+//   },
+//   {
+//     id: '2',
+//     name: 'Marketing',
+//     description: 'Handles brand promotion and customer acquisition',
+//     employeeCount: 18,
+//     createdAt: '2020-06-20',
+//   },
+//   {
+//     id: '3',
+//     name: 'Human Resources',
+//     description: 'Manages recruitment, benefits, and employee relations',
+//     employeeCount: 8,
+//     createdAt: '2020-04-10',
+//   },
+//   {
+//     id: '4',
+//     name: 'Finance',
+//     description: 'Oversees budgeting, accounting, and financial planning',
+//     employeeCount: 12,
+//     createdAt: '2020-07-05',
+//   },
+//   {
+//     id: '5',
+//     name: 'Product',
+//     description: 'Defines product strategy and roadmap',
+//     employeeCount: 15,
+//     createdAt: '2021-01-12',
+//   },
+//   {
+//     id: '6',
+//     name: 'Customer Support',
+//     description: 'Provides assistance and resolves customer issues',
+//     employeeCount: 24,
+//     createdAt: '2020-08-30',
+//   },
+// ]
 
 const filteredDepartments = computed(() => {
   if (!searchQuery.value) return departments.value
@@ -90,12 +94,11 @@ const filteredDepartments = computed(() => {
   )
 })
 
-const fetchDepartments = () => {
+const fetchDepartments = async() => {
   isLoading.value = true
-  setTimeout(() => {
-    departments.value = mockDepartments
-    isLoading.value = false
-  }, 800)
+  const response = await departmentService.getAll();
+  departments.value = response
+  isLoading.value = false
 }
 
 const openDepartmentDetails = (department: Department) => {
@@ -103,14 +106,20 @@ const openDepartmentDetails = (department: Department) => {
   isDialogOpen.value = true
 }
 
-const saveChanges = () => {
-  if (selectedDepartment.value) {
-    departments.value = departments.value.map((dept) =>
-      dept.id === selectedDepartment.value!.id ? { ...selectedDepartment.value! } : dept
-    )
+const saveChanges = async () => {
+  if(!selectedDepartment.value!.description || !selectedDepartment.value!.name){
+    toast.error({
+      title: "Error",
+      description: "Please fill in all fields.",
+    } as Toast) 
+  }
+    await departmentService.update(selectedDepartment.value!.id,selectedDepartment.value!)
+    
+    departments.value = await departmentService.getAll();
+
     isDialogOpen.value = false
     selectedDepartment.value = null
-  }
+  
 }
 
 const openAddDepartmentDialog = () => {
@@ -118,15 +127,18 @@ const openAddDepartmentDialog = () => {
   isAddDialogOpen.value = true
 }
 
-const addNewDepartment = () => {
-  const newId = `DEPT-${String(departments.value.length + 10).padStart(3, '0')}`
-  const departmentToAdd: Department = {
-    id: newId,
-    ...newDepartment.value,
-    employeeCount: 0,
-    createdAt: new Date().toISOString().split('T')[0],
+const addNewDepartment = async() => {
+
+  if(!newDepartment.value.description || !newDepartment.value.name){
+    toast.error({
+      title: "Error",
+      description: "Please fill in all fields.",
+    } as Toast) 
   }
-  departments.value = [...departments.value, departmentToAdd]
+
+  await departmentService.create(newDepartment.value);
+  
+  departments.value = await departmentService.getAll();
   isAddDialogOpen.value = false
 }
 
@@ -232,7 +244,7 @@ onBeforeMount(() => {
                     {{ department.name }}
                   </h3>
                   <p class="text-xs text-muted-foreground">
-                    Created: {{ formatDisplayDate(department.createdAt) }}
+                    Created: {{ formatDisplayDate(department.created) }}
                   </p>
                 </div>
               </div>
@@ -336,7 +348,7 @@ onBeforeMount(() => {
             <Label for="new-description">Description *</Label>
             <Input
               id="new-description"
-              v-model="newDepartment.description"
+              v-model="newDepartment.description!"
               placeholder="Enter department description"
               required
             />
@@ -344,7 +356,7 @@ onBeforeMount(() => {
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isAddDialogOpen = false">Cancel</Button>
-            <Button @click="addNewDepartment">Add Department</Button>
+            <Button class="text-foreground" @click="addNewDepartment">Add Department</Button>
           </div>
         </div>
       </DialogContent>

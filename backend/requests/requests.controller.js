@@ -13,7 +13,7 @@ module.exports = router;
 
 function create(req, res, next) {
     requestService.create(req.body)
-        .then(() => res.json({ message: 'Request created successfully' }))
+        .then(() => res.json({ message: 'Request created successfully.' }))
         .catch(next);
 }
 
@@ -37,12 +37,12 @@ function getByEmployeeId(req, res, next) {
 
 function update(req, res, next) {
     requestService.update(req.params.id, req.body)
-        .then(() => res.json({ message: 'Request updated successfully' }))
+        .then(() => res.json({ message: 'Request updated successfully.' }))
         .catch(next);
 }
 
 function _delete(req, res, next) {
     requestService.delete(req.params.id)
-        .then(() => res.json({ message: 'Request deleted successfully' }))
+        .then(() => res.json({ message: 'Request deleted successfully.' }))
         .catch(next);
 }

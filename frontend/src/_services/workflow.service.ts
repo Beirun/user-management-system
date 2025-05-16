@@ -45,6 +45,8 @@ export function useWorkflowService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Workflow operation failed');
         }
         
@@ -84,8 +86,8 @@ export function useWorkflowService() {
     }
 
     // PUT /:id
-    async function update(id: number | string, params: UpdateWorkflowPayload): Promise<Workflow> { // Controller returns updated workflow
-        return await fetchRequest<Workflow>(`/${id}`, 'PUT', params);
+    async function update(id: number | string, params: UpdateWorkflowPayload): Promise<{message : string}> { // Controller returns updated workflow
+        return await fetchRequest<{message : string}>(`/${id}`, 'PUT', params);
     }
 
     // DELETE /:id
@@ -94,8 +96,8 @@ export function useWorkflowService() {
     }
 
     // POST /onboarding
-    async function createOnboardingWorkflow(params: OnboardingWorkflowPayload): Promise<Workflow> { // Controller returns workflow
-        return await fetchRequest<Workflow>('/onboarding', 'POST', params);
+    async function createOnboardingWorkflow(params: OnboardingWorkflowPayload): Promise<{message : string}> { // Controller returns workflow
+        return await fetchRequest<{message : string}>('/onboarding', 'POST', params);
     }
 
     // POST /transfer

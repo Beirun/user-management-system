@@ -38,6 +38,8 @@ export function useEmployeeService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Employee request failed');
         }
 
@@ -69,8 +71,8 @@ export function useEmployeeService() {
         return await fetchRequest<Employee>(`/${id}`, 'GET');
     }
 
-    async function create(params: NewEmployee): Promise<{ message: string }> {
-        return await fetchRequest<{ message: string }>('/', 'POST', params);
+    async function create(params: NewEmployee): Promise<{ message: string, employee : Employee }> {
+        return await fetchRequest<{ message: string,  employee : Employee }>('/', 'POST', params);
     }
 
     async function update(id: number, params: UpdateEmployeeParams): Promise<{ message: string }> {

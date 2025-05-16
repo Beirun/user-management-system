@@ -65,6 +65,7 @@ async function create(params){
     const employee = new db.Employee(params);
     await employee.save();
     // workflowService.onboarding(employee);
+    return employee;
     
 }
 
