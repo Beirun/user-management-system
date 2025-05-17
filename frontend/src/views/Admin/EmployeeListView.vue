@@ -86,6 +86,7 @@ import type {
   UpdateRequestPayload as MainUpdateRequestPayload,
   RequestItemDetail,
 } from '@/models/request'; // Main request models
+import { is } from 'date-fns/locale'
 
 // --- INTERFACES (Component-specific or for derived data) ---
 
@@ -143,6 +144,14 @@ interface RequestFormState {
   endDate?: string;
   items: ItemDetail[];
 }
+
+
+// --- LOADING SUBMIT STATES ---
+const isAddingEmployee = ref(false);
+const isEditingEmployee = ref(false);
+const isTransferringEmployee = ref(false);
+const isUpdatingWorkflow = ref(false);
+const isEditingRequest = ref(false);
 
 
 // --- SERVICE INSTANCES ---
@@ -336,7 +345,11 @@ const openEditEmployeeDialog = (employee: Employee) => {
 };
 
 const saveEditedEmployee = async () => {
-  if (!selectedEmployee.value) return;
+  isEditingEmployee.value = true;
+  if (!selectedEmployee.value) {
+    isEditingEmployee.value = false;
+    return;
+  }
   const params: UpdateEmployeeParams = {
     position: selectedEmployee.value.position,
     accountId: selectedEmployee.value.accountId,
@@ -344,11 +357,13 @@ const saveEditedEmployee = async () => {
   };
   try {
     await employeeService.update(selectedEmployee.value.id, params);
-    await fetchAllInitialData();
+    isEditingEmployee.value = false;
     isEmployeeEditDialogOpen.value = false; selectedEmployee.value = null;
+    await fetchAllInitialData();
   } catch (error) {
     console.error("Failed to save employee:", error);
     toastService.error({ title: 'Error', description: 'Failed to update employee.' } as Toast);
+    isEditingEmployee.value = false;
   }
 };
 
@@ -358,19 +373,24 @@ const openAddEmployeeDialog = () => {
 };
 
 const addNewEmployeeHandler = async () => { // Renamed to avoid conflict
+  isAddingEmployee.value = true;
   if (!newEmployeeForm.accountId || !newEmployeeForm.departmentId || !newEmployeeForm.position || !newEmployeeForm.hireDate || !newEmployeeForm.status) {
-    toastService.error({ title: 'Validation Error', description: 'All fields are required.' } as Toast); return;
+    toastService.error({ title: 'Validation Error', description: 'All fields are required.' } as Toast); 
+    isAddingEmployee.value = false;
+    return;
   }
   try {
     const response = await employeeService.create(newEmployeeForm);
     if (response.employee?.id) {
       await workflowService.createOnboardingWorkflow({ employeeId: response.employee.id } as OnboardingWorkflowPayload);
     }
-    await fetchAllInitialData();
+    isAddingEmployee.value = false;
     isAddEmployeeDialogOpen.value = false;
+    await fetchAllInitialData();
   } catch (error) {
     console.error("Failed to add employee:", error);
     toastService.error({ title: 'Error', description: 'Failed to add employee.' } as Toast);
+    isAddingEmployee.value = false;
   }
 };
 
@@ -393,8 +413,11 @@ const openTransferDialog = (employee: Employee) => {
 };
 
 const handleTransfer = async () => {
+  isTransferringEmployee.value = true;
   if (!employeeToTransfer.value || !newDepartmentForTransfer.value) {
-    toastService.error({ title: 'Error', description: 'Missing transfer information.' } as Toast); return;
+    toastService.error({ title: 'Error', description: 'Missing transfer information.' } as Toast); 
+    isTransferringEmployee.value = false;
+    return;
   }
   const payload: TransferDepartmentPayload = { departmentId: newDepartmentForTransfer.value.id };
   try {
@@ -406,10 +429,12 @@ const handleTransfer = async () => {
     await employeeService.transferDepartment(employeeToTransfer.value.id, payload);
     await workflowService.createTransferWorkflow(wfPayload);
     isTransferDialogOpen.value = false; employeeToTransfer.value = null;
+    isTransferringEmployee.value = false;
     await fetchAllInitialData();
   } catch (error) {
     console.error("Failed to transfer employee:", error);
     toastService.error({ title: 'Error', description: 'Failed to transfer employee.' } as Toast);
+    isTransferringEmployee.value = false;
   }
 };
 
@@ -421,6 +446,7 @@ const openWorkflowsDialog = (employeeRecord: Employee) => {
 };
 
 const updateWorkflowStatus = async (employeeId: number, workflowId: number, newStatus: string) => {
+  isUpdatingWorkflow.value = true;
   try {
     await workflowService.update(workflowId, { status: newStatus } as UpdateWorkflowPayload);
     const empIdx = employees.value.findIndex(e => e.id === employeeId);
@@ -429,9 +455,11 @@ const updateWorkflowStatus = async (employeeId: number, workflowId: number, newS
       if (wfIdx !== -1) employees.value[empIdx].workflows![wfIdx].status = newStatus;
     }
     workflowsForSelectedEmployee.value = [...(employees.value.find(e => e.id === employeeId)?.workflows || [])];
+    isUpdatingWorkflow.value = false;
   } catch (error) {
     console.error("Failed to update workflow status:", error);
     toastService.error({ title: "Update Failed", description: "Could not update workflow status." } as Toast);
+    isUpdatingWorkflow.value = false;
   }
 };
 
@@ -536,41 +564,49 @@ watch(() => selectedRequestForMainEdit.value?.type, (newType, oldType) => {
 });
 
 const saveMainRequestChanges = async () => {
-    if (!selectedRequestForMainEdit.value?.id) return;
-    const form = selectedRequestForMainEdit.value;
-    let payload: MainUpdateRequestPayload = { status: form.status };
+  isLoading.value = true;  
+  if (!selectedRequestForMainEdit.value?.id){
     
-    if (form.type === 'Equipment' || form.type === 'Resources') {
-      const validItems = form.items.filter(item => item.name && item.quantity > 0);
-      if (validItems.length === 0) {
-            toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource is required.` } as Toast); return;
-          }
-        payload.items = validItems.map(item => ({ name: item.name, quantity: item.quantity }));
-    } else if (form.type === 'Leave') {
-        if (!mainEditStartDateForPicker.value || !mainEditEndDateForPicker.value) {
-            toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
+    isLoading.value = false;  
+    return;
+  }
+  const form = selectedRequestForMainEdit.value;
+  let payload: MainUpdateRequestPayload = { status: form.status };
+  
+  if (form.type === 'Equipment' || form.type === 'Resources') {
+    const validItems = form.items.filter(item => item.name && item.quantity > 0);
+    if (validItems.length === 0) {
+      isLoading.value = false;  
+      toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource is required.` } as Toast); return;
+    }
+    payload.items = validItems.map(item => ({ name: item.name, quantity: item.quantity }));
+  } else if (form.type === 'Leave') {
+    if (!mainEditStartDateForPicker.value || !mainEditEndDateForPicker.value) {
+          isLoading.value = false;  
+          toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
         }
         if (mainEditStartDateForPicker.value.compare(mainEditEndDateForPicker.value) > 0) {
-            toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
-          }
-          payload.startDate = mainEditStartDateForPicker.value.toString();
-          payload.endDate = mainEditEndDateForPicker.value.toString();
+          isLoading.value = false;  
+          toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
         }
-        if(form.type==='Leave') await workflowService.createLeaveWorkflow({
-      employeeId: form.employeeId,
-      startDate: mainEditStartDateForPicker.value!.toString(),
-      endDate: mainEditEndDateForPicker.value!.toString()
-    } as LeaveWorkflowPayload)
-    else{
-      await workflowService.createResourcesWorkflow({
+        payload.startDate = mainEditStartDateForPicker.value.toString();
+        payload.endDate = mainEditEndDateForPicker.value.toString();
+      }
+      if(form.type==='Leave') await workflowService.createLeaveWorkflow({
         employeeId: form.employeeId,
-        items: form.items
-      } as ResourcesWorkflowPayload)
-    }
-    isLoading.value = true;
-    try {
+        startDate: mainEditStartDateForPicker.value!.toString(),
+        endDate: mainEditEndDateForPicker.value!.toString()
+      } as LeaveWorkflowPayload)
+      else{
+        await workflowService.createResourcesWorkflow({
+          employeeId: form.employeeId,
+          items: form.items
+        } as ResourcesWorkflowPayload)
+      }
+      try {
         await requestService.update(form.id!, payload); // Main request service update
         isMainRequestEditDialogOpen.value = false; selectedRequestForMainEdit.value = null;
+        isLoading.value = false;
         await fetchAllInitialData(); // Re-fetch all data as an employee's request list might have changed
         const employeeRecord = employees.value.find(e => e.id === employeeForRequests.value!.id)!;
         employeeForRequests.value = employeeRecord;
@@ -728,7 +764,8 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
                 <div class="space-y-1.5 col-span-3"> <Label for="edit-position">Position *</Label> <Input id="edit-position" v-model="selectedEmployee.position" placeholder="Software Engineer" required class="w-full" /> </div>
             </div>
           </div>
-          <DialogFooter class="flex justify-end gap-2 pt-6 mt-8 border-t"> <Button variant="outline" @click="isEmployeeEditDialogOpen = false">Cancel</Button> <Button class="text-foreground" @click="saveEditedEmployee">Save Changes</Button> </DialogFooter>
+          <DialogFooter class="flex justify-end gap-2 pt-6 mt-8 border-t"> <Button variant="outline" @click="isEmployeeEditDialogOpen = false">Cancel</Button> <Button :disabled="isEditingEmployee" class="text-foreground" @click="saveEditedEmployee">        <RefreshCw v-if="isEditingEmployee" class="mr-2 h-4 w-4 animate-spin" />
+{{ isEditingEmployee ? 'Saving...' : 'Save Changes' }}</Button> </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
@@ -772,7 +809,8 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
                 </div>
             </div>
           </div>
-          <DialogFooter class="flex justify-end gap-2 pt-6 mt-8 border-t"> <Button variant="outline" @click="isAddEmployeeDialogOpen = false">Cancel</Button> <Button class="text-foreground" @click="addNewEmployeeHandler">Add Employee Record</Button> </DialogFooter>
+          <DialogFooter class="flex justify-end gap-2 pt-6 mt-8 border-t"> <Button variant="outline" @click="isAddEmployeeDialogOpen = false">Cancel</Button> <Button :disabled="isAddingEmployee" class="text-foreground" @click="addNewEmployeeHandler">        <RefreshCw v-if="isAddingEmployee" class="mr-2 h-4 w-4 animate-spin" />
+{{ isAddingEmployee ? 'Adding Employee...' : 'Add Employee' }}</Button> </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
@@ -799,7 +837,8 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
               </Select>
             </div>
           </div>
-          <DialogFooter class="flex justify-end gap-2 pt-6 mt-4 border-t"> <Button variant="outline" @click="isTransferDialogOpen = false">Cancel</Button> <Button @click="handleTransfer" class="text-foreground">Confirm Transfer</Button> </DialogFooter>
+          <DialogFooter class="flex justify-end gap-2 pt-6 mt-4 border-t"> <Button variant="outline" @click="isTransferDialogOpen = false">Cancel</Button> <Button :disabled="isTransferringEmployee" @click="handleTransfer" class="text-foreground"><RefreshCw v-if="isTransferringEmployee" class="mr-2 h-4 w-4 animate-spin" />
+{{ isTransferringEmployee ? 'Transferring Employee...' : 'Transfer Employee' }}</Button> </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
@@ -823,7 +862,8 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
               <div class="mt-2 pt-2 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <Badge :class="cn('capitalize', getRequestCardStatusBadgeClass(wf.status))"> {{ wf.status }} </Badge>
                 <DropdownMenu>
-                  <DropdownMenuTrigger as-child> <Button variant="outline" size="sm"> Update Status <MoreHorizontal class="ml-1 h-4 w-4" /> </Button> </DropdownMenuTrigger>
+                  <DropdownMenuTrigger as-child> <Button :disabled="isUpdatingWorkflow" variant="outline" size="sm">        <RefreshCw v-if="isUpdatingWorkflow" class="mr-2 h-4 w-4 animate-spin" />
+                   {{ isUpdatingWorkflow ? 'Updating...' : 'Update Status' }} <MoreHorizontal class="ml-1 h-4 w-4" /> </Button> </DropdownMenuTrigger>
                   <DropdownMenuContent align="end"> <DropdownMenuItem v-for="statusOpt in workflowStatusOptionsFromApi.filter(s => s !== wf.status)" :key="statusOpt" @click="updateWorkflowStatus(employeeForWorkflows!.id,wf.id, statusOpt)"> Set to {{ statusOpt }} </DropdownMenuItem> </DropdownMenuContent>
                 </DropdownMenu>
               </div>

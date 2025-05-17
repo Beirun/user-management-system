@@ -53,7 +53,7 @@ onBeforeMount(async () => {
     router.push('/login')
   }
 })
-
+const isLoading = ref(false)
 const password = ref('')
 const confirmPassword = ref('')
 
@@ -61,6 +61,7 @@ const saveChanges = async () => {
   try {
     if (!currentAccount.value) return
 
+    isLoading.value = true
     // Validate passwords match if either is filled
     if (password.value || confirmPassword.value) {
       if (password.value !== confirmPassword.value) {
@@ -69,24 +70,26 @@ const saveChanges = async () => {
           description: 'Passwords do not match',
           type: 'error',
         })
+        isLoading.value = false
         return
       }
     }
-
+    
     const { update } = useAccountService()
     const updateData = {
       ...currentAccount.value,
       ...(password.value ? { password: password.value } : {}),
     }
-
+    
     await update(currentAccount.value.id, updateData)
-
+    
+    isLoading.value = false
     useToastService().success({
       title: 'Success',
       description: 'User updated successfully',
       type: 'success',
     })
-
+    
     // Reset password fields
     password.value = ''
     confirmPassword.value = ''
@@ -99,6 +102,7 @@ const saveChanges = async () => {
       description: 'Failed to update user',
       type: 'error',
     })
+      isLoading.value = false
   }
 }
 </script>
@@ -244,7 +248,7 @@ const saveChanges = async () => {
 
                 <div class="flex justify-end gap-2 pt-4">
                   <Button variant="outline" @click="isDialogOpen = false"> Cancel </Button>
-                  <Button class="text-foreground" @click="saveChanges"> Save changes </Button>
+                  <Button :disabled="isLoading" class="text-foreground" @click="saveChanges"> <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" /> {{ isLoading ? 'Saving...' : 'Save Changes' }} </Button>
                 </div>
               </div>
             </DialogContent>

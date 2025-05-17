@@ -5,7 +5,7 @@ import { Eye } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'
 // import { toast } from 'vue-sonner'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 // import axios from '@/_helpers/axios';
 // import axios from 'axios';
 import { useAccountService } from '@/_services/account.service'
@@ -25,8 +25,9 @@ const { login, isEmailVerified, emailExists, isPasswordCorrect } = useAccountSer
 const accountStore = useAccountStore()
 const toast = useToastService()
 const router = useRouter()
-
+const isSubmitting = ref(false)
 const handleLogin = async () => {
+  isSubmitting.value = true
   if (!loginData.email || !loginData.password) {
     const toastOptions: Toast = {
       title: 'Login Failed',
@@ -34,6 +35,7 @@ const handleLogin = async () => {
       type: 'error',
     }
     toast.error(toastOptions)
+    isSubmitting.value = false
     return
   }
   //check if emailexists
@@ -45,6 +47,7 @@ const handleLogin = async () => {
       type: 'error',
     }
     toast.error(toastOptions)
+    isSubmitting.value = false
     return
   }
   const isPasswordCorrectResult = await isPasswordCorrect(loginData.email, loginData.password)
@@ -55,9 +58,10 @@ const handleLogin = async () => {
       type: 'error',
     }
     toast.error(toastOptions)
+    isSubmitting.value = false
     return
   }
-
+  
   const isVerified = await isEmailVerified(loginData.email)
   if (!isVerified.isVerified) {
     const toastOptions: ToastWithAction = {
@@ -73,6 +77,7 @@ const handleLogin = async () => {
       },
     }
     toast.error(toastOptions)
+    isSubmitting.value = false
     return
   }
   const response = await login(loginData.email, loginData.password)
@@ -84,9 +89,10 @@ const handleLogin = async () => {
       type: 'error',
     }
     toast.error(toastOptions)
+    isSubmitting.value = false
     return
   }
-
+  
   accountStore.setAccount(response)
   const toastOptions: Toast = {
     title: 'Login Successful',
@@ -94,13 +100,14 @@ const handleLogin = async () => {
     type: 'success',
   }
   toast.success(toastOptions)
+  isSubmitting.value = false
 
   if (response.role === 'Admin') {
     router.push('/admin/users')
   } else {
     router.push('/user/dashboard')
   }
-
+  
   // Handle login logic here
   // console.log(loginData);
   // const response = await fetch("http://localhost:3000/accounts/test");
@@ -138,8 +145,9 @@ const toggleTheme = () => {
         </div>
         <Button
           @click="handleLogin"
+          :disabled="isSubmitting"
           class="w-full cursor-pointer h-15 text-md font-bold text-foreground"
-          >Login</Button
+          >{{ isSubmitting ? 'Logging in...' : 'Login' }}</Button
         >
         <p>
           Don't have an account?

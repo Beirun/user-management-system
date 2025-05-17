@@ -20,7 +20,7 @@ import { useAccountService } from '@/_services/account.service'
 import { Switch } from '@/components/ui/switch'
 import { Sun, Moon } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
-
+import { RefreshCw } from 'lucide-vue-next'
 const mode = useColorMode({ disableTransition: false })
 const toast = useToastService()
 const isSubmitting = ref(false) // Added loading state
@@ -97,7 +97,7 @@ const handleSubmit = async () => {
           class="w-full h-15 font-bold text-md text-foreground"
           :disabled="isSubmitting"
         >
-          <span v-if="isSubmitting">Submitting...</span>
+          <span v-if="isSubmitting"><RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />Submitting...</span>
           <span v-else>Submit</span>
         </Button>
 

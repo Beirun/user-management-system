@@ -83,6 +83,7 @@ const fetchAccounts = async () => {
   }
 }
 
+const isSubmitting = ref(false)
 const openUserDetails = (account: Account) => {
   selectedAccount.value = account
   isDialogOpen.value = true
@@ -92,8 +93,13 @@ const confirmPassword = ref('')
 
 const saveChanges = async () => {
   try {
-    if (!selectedAccount.value) return
-
+    isSubmitting.value = true
+    if (!selectedAccount.value){
+      
+      isSubmitting.value = false
+      return
+    }
+    
     // Validate passwords match if either is filled
     if (password.value || confirmPassword.value) {
       if (password.value !== confirmPassword.value) {
@@ -102,6 +108,7 @@ const saveChanges = async () => {
           description: 'Passwords do not match',
           type: 'error',
         })
+        isSubmitting.value = false
         return
       }
     }
@@ -119,20 +126,22 @@ const saveChanges = async () => {
       description: 'User updated successfully',
       type: 'success',
     })
-
+    
     // Reset password fields
     password.value = ''
     confirmPassword.value = ''
-
+    
     accounts.value.map((acc)=> acc.id === selectedAccount.value!.id ? selectedAccount.value : acc )
     // await fetchAccounts() // Refresh the list
     isDialogOpen.value = false
+    isSubmitting.value = false
   } catch (error) {
     useToastService().error({
       title: 'Error',
       description: 'Failed to update user',
       type: 'error',
     })
+    isSubmitting.value = false
   }
 }
 onBeforeMount(async () => {
@@ -406,7 +415,8 @@ onBeforeMount(async () => {
 
           <div class="flex justify-end gap-2 pt-4">
             <Button variant="outline" @click="isDialogOpen = false"> Cancel </Button>
-            <Button @click="saveChanges" class="text-foreground"> Save changes </Button>
+            <Button :disabled="isSubmitting" @click="saveChanges" class="text-foreground">        <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isSubmitting ? 'Saving...' : 'Save Changes' }}</Button>
           </div>
         </div>
       </DialogContent>
