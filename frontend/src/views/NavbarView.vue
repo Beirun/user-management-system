@@ -123,7 +123,7 @@ const handleLogout = async () => {
             </Switch>
         </div>
 
-        <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
+        <Button :disabled="isLoggingOut" variant="outline" size="sm" class="gap-2" @click="handleLogout">
           <RefreshCw v-if="isLoggingOut" class="mr-2 h-4 w-4 animate-spin" /> 
           <LogOut v-else class="h-4 w-4 mr-2" />
           <span>Logout</span>
