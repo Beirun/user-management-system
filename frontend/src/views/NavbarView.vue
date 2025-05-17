@@ -125,8 +125,8 @@ const handleLogout = async () => {
 
         <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
           <RefreshCw v-if="isLoggingOut" class="mr-2 h-4 w-4 animate-spin" /> 
-          <LogOut v-else class="h-4 w-4" />
-          <span>{{ isLoggingOut ? 'Logging out...' : 'Logout' }}</span>
+          <LogOut v-else class="h-4 w-4 mr-2" />
+          <span>Logout</span>
         </Button>
       </div>
     </div>
