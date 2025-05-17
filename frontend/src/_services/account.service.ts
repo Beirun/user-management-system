@@ -51,7 +51,7 @@ export function useAccountService() {
             body: body ? JSON.stringify(body) : undefined
         });
 
-        if (!response.ok) {
+        if (!response.ok && endpoint !== '/revoke-token') {
             const error = await response.json().catch(() => ({}));
             const toastOptions: Toast = {
                 title: "Error",
