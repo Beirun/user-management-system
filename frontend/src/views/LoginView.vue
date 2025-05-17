@@ -15,6 +15,7 @@ import type { Toast, ToastWithAction } from '@/models/toast'
 import { Switch } from '@/components/ui/switch'
 import { Sun, Moon, LogOut, User } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
+import { is } from 'date-fns/locale'
 
 const mode = useColorMode({ disableTransition: false })
 const loginData = reactive({
@@ -27,7 +28,8 @@ const toast = useToastService()
 const router = useRouter()
 const isSubmitting = ref(false)
 const handleLogin = async () => {
-  isSubmitting.value = true
+ try {
+    isSubmitting.value = true
   if (!loginData.email || !loginData.password) {
     const toastOptions: Toast = {
       title: 'Login Failed',
@@ -117,6 +119,18 @@ const handleLogin = async () => {
   // toast.success('Success',{
   //     description:"Registration successful, please check your email for verification instructions.",
   // });
+ }catch (error) {
+    const toastOptions: Toast = {
+      title: 'Login Failed',
+      description: (error as Error).message,
+      type: 'error',
+    }
+    toast.error(toastOptions)
+    isSubmitting.value = false
+  }
+  finally{
+    isSubmitting.value = false
+  }
 }
 
 const toggleTheme = () => {
