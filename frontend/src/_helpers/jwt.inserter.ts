@@ -7,7 +7,7 @@ export function useHttpService() {
   const isLoading = ref(false);
   const error = ref<Error | null>(null);
 
-  const baseUrl = import.meta.env.BACKEND_URL ?? environment.apiUrl;
+  const baseUrl = import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl;
 
   async function request<T>(url: string, config: RequestInit = {}): Promise<T> {
     isLoading.value = true;
