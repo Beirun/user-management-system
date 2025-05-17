@@ -72,7 +72,7 @@ const handleLogin = async () => {
         class:'button',
         label: 'Verify Email',
         onClick: () => {
-          window.location.href = `http://localhost:5173/account/verify-email?token=${isVerified.token}`
+          window.location.href = `${window.location.origin}/account/verify-email?token=${isVerified.token}`
         },
       },
     }
