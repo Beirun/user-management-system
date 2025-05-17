@@ -120,12 +120,6 @@ const handleLogin = async () => {
   //     description:"Registration successful, please check your email for verification instructions.",
   // });
  }catch (error) {
-    const toastOptions: Toast = {
-      title: 'Login Failed',
-      description: (error as Error).message,
-      type: 'error',
-    }
-    toast.error(toastOptions)
     isSubmitting.value = false
   }
   finally{
