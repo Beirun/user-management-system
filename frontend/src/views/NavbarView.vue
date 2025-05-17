@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 // Import new icons
 import { Sun, Moon, LogOut, User, Users, Building2, FileText } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
+import { ref } from 'vue';
+import { RefreshCw } from 'lucide-vue-next'
 
 const mode = useColorMode({ disableTransition: false })
 const router = useRouter()
@@ -17,11 +19,13 @@ const accountStore = useAccountStore()
 const { logout } = useAccountService()
 const toast = useToastService()
 
+const isLoggingOut = ref(false)
 const toggleTheme = () => {
   mode.value = mode.value === 'dark' ? 'light' : 'dark'
 }
 
 const handleLogout = async () => {
+  isLoggingOut.value = true
   try {
     await logout()
     accountStore.logout()
@@ -30,6 +34,7 @@ const handleLogout = async () => {
         description: "Logged out successfully.",
         type: "success",
     }
+    isLoggingOut.value = false
     toast.success(toastOptions);
     router.push('/login')
   } catch (error) {
@@ -38,6 +43,7 @@ const handleLogout = async () => {
       description: (error as Error).message,
       type: 'error',
     }
+    isLoggingOut.value = false
     toast.error(toastOptions)
   }
 }
@@ -118,8 +124,9 @@ const handleLogout = async () => {
         </div>
 
         <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
-          <LogOut class="h-4 w-4" />
-          <span>Logout</span>
+          <RefreshCw v-if="isLoggingOut" class="mr-2 h-4 w-4 animate-spin" /> 
+          <LogOut v-else class="h-4 w-4" />
+          <span>{{ isLoggingOut ? 'Logging out...' : 'Logout' }}</span>
         </Button>
       </div>
     </div>
