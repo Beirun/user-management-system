@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Sun, Moon, LogOut, User, ArrowLeft } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
-
+import { RefreshCw } from 'lucide-vue-next'
 const isSubmitting = ref(false)
 const mode = useColorMode({ disableTransition: false })
 const route = useRoute()
@@ -80,6 +80,7 @@ const handleSubmit = async() => {
                     class="w-full h-15 font-bold text-md text-foreground"
                     :disabled="isSubmitting"
                 >
+                <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
                     {{ isSubmitting ? 'Submitting...' : 'Submit' }}
                 </Button>
                 <div class="absolute bottom-10 gap-4 flex items-center text-lg">

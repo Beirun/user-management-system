@@ -358,21 +358,30 @@ watch(() => selectedRequestForEdit.value?.type, (newType, oldType) => {
 });
 
 const saveRequestChanges = async () => {
-  if (!selectedRequestForEdit.value || selectedRequestForEdit.value.id === undefined) return;
+  if (!selectedRequestForEdit.value || selectedRequestForEdit.value.id === undefined) {
+    
+    return;
+  }
+    isLoading.value = true;
+
   const form = selectedRequestForEdit.value;
   let payload: UpdateRequestPayload = { status: form.status }; // Request date not typically updated via PUT payload
 
   if (form.type === 'Equipment' || form.type === 'Resources') {
     const validItems = form.items.filter(item => item.name && item.quantity > 0);
     if (validItems.length === 0) {
+    isLoading.value = false;
+
       toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource (name and quantity > 0) is required.` } as Toast); return;
     }
     payload.items = validItems.map(item => ({ name: item.name, quantity: item.quantity }));
   } else if (form.type === 'Leave') {
     if (!editStartDateForPicker.value || !editEndDateForPicker.value) {
+    isLoading.value = false;
       toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
     }
     if (editStartDateForPicker.value.compare(editEndDateForPicker.value) > 0) {
+    isLoading.value = false;
       toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
     }
     payload.startDate = editStartDateForPicker.value.toString();
@@ -393,6 +402,7 @@ const saveRequestChanges = async () => {
   try {
     await requestService.update(form.id!, payload);
     isEditDialogOpen.value = false; selectedRequestForEdit.value = null;
+    isLoading.value = false;
     await fetchRequestsAndEmployees();
   } catch (error) { console.error("Error updating request:", error); }
   finally { isLoading.value = false; }
@@ -445,6 +455,7 @@ watch(() => newRequestForm.value.type, (newType, oldType) => {
 });
 
 const addNewRequest = async () => {
+  isLoading.value = true;
   const form = newRequestForm.value;
   if (form.employeeId === undefined) {
     toastService.error({ title: 'Validation Error', description: 'Please select an employee.' } as Toast); return;
@@ -458,21 +469,24 @@ const addNewRequest = async () => {
   if (form.type === 'Equipment' || form.type === 'Resources') {
     const validItems = form.items.filter(item => item.name && item.quantity > 0);
     if (validItems.length === 0) {
+      isLoading.value = false;
       toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource (name and quantity > 0) is required.` } as Toast); return;
     }
     payload = { employeeId: form.employeeId, type: form.type, status: form.status, requestDate: form.requestDate, items: validItems.map(item => ({ name: item.name, quantity: item.quantity })) };
   } else if (form.type === 'Leave') {
     if (!newStartDateForPicker.value || !newEndDateForPicker.value) {
+      isLoading.value = false;
       toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
     }
     if (newStartDateForPicker.value.compare(newEndDateForPicker.value) > 0) {
+      isLoading.value = false;
       toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
     }
     payload = { employeeId: form.employeeId, type: 'Leave', status: form.status, requestDate: form.requestDate, startDate: newStartDateForPicker.value.toString(), endDate: newEndDateForPicker.value.toString() };
   } else {
+    isLoading.value = false;
     toastService.error({ title: 'Error', description: 'Invalid request type.' } as Toast); return;
   }
-  isLoading.value = true;
   try {
     await requestService.create(payload);
     if(form.type==='Leave') await workflowService.createLeaveWorkflow({
@@ -486,6 +500,7 @@ const addNewRequest = async () => {
         items: form.items
       } as ResourcesWorkflowPayload)
     }
+    isLoading.value = false;
     isAddRequestDialogOpen.value = false;
     await fetchRequestsAndEmployees();
   } catch (error) { console.error("Error adding new request:", error); }
@@ -546,7 +561,7 @@ watch(editEndDateForPicker, (val) => { if (selectedRequestForEdit.value?.type ==
             <FolderSearch class="h-16 w-16 text-muted-foreground" />
             <h3 class="text-xl font-medium">No Requests Found</h3>
             <p class="text-sm text-muted-foreground">No requests match your criteria, or none have been added yet.</p>
-             <Button size="sm" @click="openAddRequestDialog" class="mt-2"><FilePlus2 class="mr-2 h-4 w-4" />Add First Request</Button>
+             <Button size="sm" @click="openAddRequestDialog" class="mt-2 text-foreground"><FilePlus2 class="mr-2 h-4 w-4" />Add First Request</Button>
           </div>
 
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -724,7 +739,7 @@ watch(editEndDateForPicker, (val) => { if (selectedRequestForEdit.value?.type ==
       <Button variant="outline" @click="isEditDialogOpen = false">Cancel</Button>
       <Button @click="saveRequestChanges" class="text-foreground" :disabled="isLoading">
         <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-        Save Changes
+        {{ isLoading ? 'Saving...' : 'Save Changes' }}
       </Button>
     </DialogFooter>
   </DialogContent>
@@ -832,7 +847,7 @@ watch(editEndDateForPicker, (val) => { if (selectedRequestForEdit.value?.type ==
                 <Button variant="outline" @click="isAddRequestDialogOpen = false">Cancel</Button>
                 <Button @click="addNewRequest" class="text-foreground" :disabled="isLoading">
                    <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-                   Add Request
+                   {{ isLoading ? 'Adding...' : 'Add Request' }}
                 </Button>
             </DialogFooter>
         </DialogContent>

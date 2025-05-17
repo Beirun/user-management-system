@@ -84,6 +84,8 @@ const newDepartment = ref<NewDepartment>({
 //     createdAt: '2020-08-30',
 //   },
 // ]
+const isAddingDepartment = ref(false)
+const isEditingDepartment = ref(false)
 
 const filteredDepartments = computed(() => {
   if (!searchQuery.value) return departments.value
@@ -107,14 +109,18 @@ const openDepartmentDetails = (department: Department) => {
 }
 
 const saveChanges = async () => {
+  isEditingDepartment.value = true
   if(!selectedDepartment.value!.description || !selectedDepartment.value!.name){
     toast.error({
       title: "Error",
       description: "Please fill in all fields.",
     } as Toast) 
+    isEditingDepartment.value = false
+    return
   }
-    await departmentService.update(selectedDepartment.value!.id,selectedDepartment.value!)
-    
+  await departmentService.update(selectedDepartment.value!.id,selectedDepartment.value!)
+  
+  isEditingDepartment.value = false
     departments.value = await departmentService.getAll();
 
     isDialogOpen.value = false
@@ -128,15 +134,18 @@ const openAddDepartmentDialog = () => {
 }
 
 const addNewDepartment = async() => {
-
+  isAddingDepartment.value = true
   if(!newDepartment.value.description || !newDepartment.value.name){
     toast.error({
       title: "Error",
       description: "Please fill in all fields.",
     } as Toast) 
+    isAddingDepartment.value = false
+    return
   }
-
+  
   await departmentService.create(newDepartment.value);
+  isAddingDepartment.value = false
   
   departments.value = await departmentService.getAll();
   isAddDialogOpen.value = false
@@ -321,7 +330,8 @@ onBeforeMount(() => {
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isDialogOpen = false">Cancel</Button>
-            <Button @click="saveChanges" class="text-foreground">Save Changes</Button>
+            <Button @click="saveChanges" :disabled="isEditingDepartment" class="text-foreground"><RefreshCw v-if="isEditingDepartment" class="mr-2 h-4 w-4 animate-spin" />
+             {{ isEditingDepartment ? 'Saving...' : 'Save Changes' }}</Button>
           </div>
         </div>
       </DialogContent>
@@ -356,7 +366,7 @@ onBeforeMount(() => {
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isAddDialogOpen = false">Cancel</Button>
-            <Button class="text-foreground" @click="addNewDepartment">Add Department</Button>
+            <Button :disabled="isAddingDepartment" class="text-foreground" @click="addNewDepartment">{{ isAddingDepartment ? 'Adding...' : 'Add Department' }}</Button>
           </div>
         </div>
       </DialogContent>
