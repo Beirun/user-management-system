@@ -4,22 +4,25 @@ import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
 import { useAccountStore } from '@/stores/account'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 // Import new icons
 import { Sun, Moon, LogOut, User, Users, Building2, FileText } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { RefreshCw } from 'lucide-vue-next'
 
 const mode = useColorMode({ disableTransition: false })
 const router = useRouter()
+const route = useRoute()
 const accountStore = useAccountStore()
 const { logout } = useAccountService()
 const toast = useToastService()
 
 const isLoggingOut = ref(false)
+
+
 const toggleTheme = () => {
   mode.value = mode.value === 'dark' ? 'light' : 'dark'
 }
@@ -70,25 +73,25 @@ const handleLogout = async () => {
 
         <!-- Admin Specific Navigation Links -->
         <template v-if="accountStore.account?.role === 'Admin'">
-          <RouterLink to="/admin/users">
-            <Button variant="ghost" size="sm" class="gap-2">
+          <RouterLink to="/admin/users" :class="route.path === '/admin/users' ? 'text-primary pointer-events-none ' : ''">
+            <Button variant="ghost"  size="sm" class="gap-2" >
               <Users class="h-4 w-4" />
               <span>Accounts</span>
             </Button>
           </RouterLink>
-          <RouterLink to="/admin/employees">
+          <RouterLink to="/admin/employees" :class="route.path === '/admin/employees' ? 'text-primary pointer-events-none ' : ''">
             <Button variant="ghost" size="sm" class="gap-2">
               <Users class="h-4 w-4" />
               <span>Employees</span>
             </Button>
           </RouterLink>
-          <RouterLink to="/admin/departments">
+          <RouterLink to="/admin/departments" :class="route.path === '/admin/departments' ? 'text-primary pointer-events-none ' : ''">
             <Button variant="ghost" size="sm" class="gap-2">
               <Building2 class="h-4 w-4" />
               <span>Departments</span>
             </Button>
           </RouterLink>
-          <RouterLink to="/admin/requests">
+          <RouterLink to="/admin/requests" :class="route.path === '/admin/requests' ? 'text-primary pointer-events-none ' : ''">
             <Button variant="ghost" size="sm" class="gap-2">
               <FileText class="h-4 w-4" />
               <span>Requests</span>
@@ -96,7 +99,7 @@ const handleLogout = async () => {
           </RouterLink>
         </template>
         <!-- End Admin Specific Navigation Links -->
-        <RouterLink to="/profile">
+        <RouterLink to="/profile" :class="route.path === '/profile' ? 'text-primary pointer-events-none ' : ''">
           <Button variant="ghost" size="sm" class="gap-2">
             <User class="h-4 w-4" />
             <span>Profile</span>
