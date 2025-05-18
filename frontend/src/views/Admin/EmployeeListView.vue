@@ -844,7 +844,9 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
                     <SelectValue placeholder="Select an existing account" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem :disabled="true" :value="null" v-if="accounts.filter(r => !employees.some(e => e.accountId === Number(r.id))).length === 0">No accounts found</SelectItem>
+                    <SelectItem :disabled="true" :value="null"
+                      v-if="accounts.filter(r => !employees.some(e => e.accountId === Number(r.id))).length === 0">No
+                      accounts found</SelectItem>
                     <SelectItem v-for="acc in accounts.filter(r => !employees.some(e => e.accountId === Number(r.id)))"
                       :key="acc.id" :value="acc.id"> {{ acc.email }} ({{ acc.firstName }} {{ acc.lastName }})
                     </SelectItem>
@@ -859,7 +861,8 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem :disabled="true" :value="null" v-if="departments.length === 0">No departments found</SelectItem>
+                    <SelectItem :disabled="true" :value="null" v-if="departments.length === 0">No departments found
+                    </SelectItem>
                     <SelectItem v-else v-for="dept in departments" :key="dept.id" :value="dept.id"> {{ dept.name }}
                     </SelectItem>
                   </SelectContent>
@@ -1118,7 +1121,7 @@ watch(mainEditEndDateForPicker, (val) => { if (selectedRequestForMainEdit.value?
                 <SelectContent>
                   <SelectItem v-for="typeOpt in mainRequestTypeOptions" :key="`main-edit-${typeOpt}`" :value="typeOpt">
                     {{
-                    typeOpt }}</SelectItem>
+                      typeOpt }}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

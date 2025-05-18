@@ -96,7 +96,7 @@ const filteredDepartments = computed(() => {
   )
 })
 
-const fetchDepartments = async() => {
+const fetchDepartments = async () => {
   isLoading.value = true
   const response = await departmentService.getAll();
   departments.value = response
@@ -110,22 +110,22 @@ const openDepartmentDetails = (department: Department) => {
 
 const saveChanges = async () => {
   isEditingDepartment.value = true
-  if(!selectedDepartment.value!.description || !selectedDepartment.value!.name){
+  if (!selectedDepartment.value!.description || !selectedDepartment.value!.name) {
     toast.error({
       title: "Error",
       description: "Please fill in all fields.",
-    } as Toast) 
+    } as Toast)
     isEditingDepartment.value = false
     return
   }
-  await departmentService.update(selectedDepartment.value!.id,selectedDepartment.value!)
-  
-  isEditingDepartment.value = false
-    departments.value = await departmentService.getAll();
+  await departmentService.update(selectedDepartment.value!.id, selectedDepartment.value!)
 
-    isDialogOpen.value = false
-    selectedDepartment.value = null
-  
+  isEditingDepartment.value = false
+  departments.value = await departmentService.getAll();
+
+  isDialogOpen.value = false
+  selectedDepartment.value = null
+
 }
 
 const openAddDepartmentDialog = () => {
@@ -133,20 +133,20 @@ const openAddDepartmentDialog = () => {
   isAddDialogOpen.value = true
 }
 
-const addNewDepartment = async() => {
+const addNewDepartment = async () => {
   isAddingDepartment.value = true
-  if(!newDepartment.value.description || !newDepartment.value.name){
+  if (!newDepartment.value.description || !newDepartment.value.name) {
     toast.error({
       title: "Error",
       description: "Please fill in all fields.",
-    } as Toast) 
+    } as Toast)
     isAddingDepartment.value = false
     return
   }
-  
+
   await departmentService.create(newDepartment.value);
   isAddingDepartment.value = false
-  
+
   departments.value = await departmentService.getAll();
   isAddDialogOpen.value = false
 }
@@ -193,7 +193,7 @@ onBeforeMount(() => {
 
             <div class="flex gap-2">
               <Button variant="outline" size="sm" @click="fetchDepartments" :disabled="isLoading">
-                <RefreshCw class="mr-2 h-4 w-4" :class="{'animate-spin': isLoading}" />
+                <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isLoading }" />
                 Refresh
               </Button>
               <Button size="sm" @click="openAddDepartmentDialog" class="text-foreground">
@@ -224,10 +224,8 @@ onBeforeMount(() => {
           </div>
 
           <!-- Empty State -->
-          <div
-            v-else-if="filteredDepartments.length === 0"
-            class="flex flex-col items-center justify-center py-12 gap-4 text-center"
-          >
+          <div v-else-if="filteredDepartments.length === 0"
+            class="flex flex-col items-center justify-center py-12 gap-4 text-center">
             <Briefcase class="h-16 w-16 text-muted-foreground" />
             <h3 class="text-xl font-medium">No departments found</h3>
             <p class="text-sm text-muted-foreground">
@@ -237,11 +235,8 @@ onBeforeMount(() => {
 
           <!-- Card Grid -->
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="department in filteredDepartments"
-              :key="department.id"
-              class="border bg-card text-card-foreground rounded-lg p-5 hover:shadow-lg transition-shadow duration-200 flex flex-col"
-            >
+            <div v-for="department in filteredDepartments" :key="department.id"
+              class="border bg-card text-card-foreground rounded-lg p-5 hover:shadow-lg transition-shadow duration-200 flex flex-col">
               <div class="flex items-start gap-4 mb-4">
                 <Avatar class="h-12 w-12 bg-muted border">
                   <AvatarFallback>
@@ -268,12 +263,8 @@ onBeforeMount(() => {
                 <Badge variant="secondary" class="px-2 py-0.5">
                   {{ department.employeeCount }} {{ department.employeeCount === 1 ? 'employee' : 'employees' }}
                 </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  @click="openDepartmentDetails(department)"
-                >
+                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  @click="openDepartmentDetails(department)">
                   <Pencil class="h-4 w-4" />
                 </Button>
               </div>
@@ -310,28 +301,21 @@ onBeforeMount(() => {
           <div class="grid gap-4">
             <div class="space-y-1.5">
               <Label for="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                v-model="selectedDepartment.name"
-                placeholder="Enter department name"
-                required
-              />
+              <Input id="edit-name" v-model="selectedDepartment.name" placeholder="Enter department name" required />
             </div>
             <div class="space-y-1.5">
               <Label for="edit-description">Description *</Label>
-              <Input
-                id="edit-description"
-                v-model="selectedDepartment.description"
-                placeholder="Enter department description"
-                required
-              />
+              <Input id="edit-description" v-model="selectedDepartment.description"
+                placeholder="Enter department description" required />
             </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isDialogOpen = false">Cancel</Button>
-            <Button @click="saveChanges" :disabled="isEditingDepartment" class="text-foreground"><RefreshCw v-if="isEditingDepartment" class="mr-2 h-4 w-4 animate-spin" />
-             {{ isEditingDepartment ? 'Saving...' : 'Save Changes' }}</Button>
+            <Button @click="saveChanges" :disabled="isEditingDepartment" class="text-foreground">
+              <RefreshCw v-if="isEditingDepartment" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isEditingDepartment ? 'Saving...' : 'Save Changes' }}
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -347,26 +331,18 @@ onBeforeMount(() => {
         <div class="grid gap-4 py-4">
           <div class="space-y-1.5">
             <Label for="new-name">Name *</Label>
-            <Input
-              id="new-name"
-              v-model="newDepartment.name"
-              placeholder="Enter department name"
-              required
-            />
+            <Input id="new-name" v-model="newDepartment.name" placeholder="Enter department name" required />
           </div>
           <div class="space-y-1.5">
             <Label for="new-description">Description *</Label>
-            <Input
-              id="new-description"
-              v-model="newDepartment.description!"
-              placeholder="Enter department description"
-              required
-            />
+            <Input id="new-description" v-model="newDepartment.description!" placeholder="Enter department description"
+              required />
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isAddDialogOpen = false">Cancel</Button>
-            <Button :disabled="isAddingDepartment" class="text-foreground" @click="addNewDepartment">{{ isAddingDepartment ? 'Adding...' : 'Add Department' }}</Button>
+            <Button :disabled="isAddingDepartment" class="text-foreground" @click="addNewDepartment">{{
+              isAddingDepartment ? 'Adding...' : 'Add Department' }}</Button>
           </div>
         </div>
       </DialogContent>

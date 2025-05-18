@@ -122,11 +122,11 @@ const resetNewUserForm = () => {
 const saveChanges = async () => {
   try {
     isSubmitting.value = true
-    if (!selectedAccount.value){
+    if (!selectedAccount.value) {
       isSubmitting.value = false
       return
     }
-    
+
     // Validate passwords match if either is filled
     if (password.value || confirmPassword.value) {
       if (password.value !== confirmPassword.value) {
@@ -153,12 +153,12 @@ const saveChanges = async () => {
       description: 'User updated successfully',
       type: 'success',
     })
-    
+
     // Reset password fields
     password.value = ''
     confirmPassword.value = ''
-    
-    accounts.value.map((acc)=> acc.id === selectedAccount.value!.id ? selectedAccount.value : acc )
+
+    accounts.value.map((acc) => acc.id === selectedAccount.value!.id ? selectedAccount.value : acc)
     // await fetchAccounts() // Refresh the list
     isDialogOpen.value = false
     isSubmitting.value = false
@@ -174,7 +174,7 @@ const saveChanges = async () => {
 
 const createUser = async () => {
   try {
-    if(!newUser.value.email || !newUser.value.password || !newUser.value.confirmPassword || !newUser.value.firstName || !newUser.value.lastName || !newUser.value.role || !newUser.value.status) {
+    if (!newUser.value.email || !newUser.value.password || !newUser.value.confirmPassword || !newUser.value.firstName || !newUser.value.lastName || !newUser.value.role || !newUser.value.status) {
       useToastService().error({
         title: 'Error',
         description: 'All fields are required',
@@ -198,7 +198,7 @@ const createUser = async () => {
     console.log(newUser.value)
     await create(newUser.value as NewAccount)
 
-    
+
     useToastService().success({
       title: 'Success',
       description: 'User created successfully',
@@ -240,14 +240,14 @@ onBeforeMount(async () => {
   await fetchAccounts()
 })
 
-function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
-  if(!acc.lastLogin) return "Never"
-  if(accountStore.account!.id === acc.id) return "Active now";
+function getTimeAgo(acc: Account, timestamp: Date | string | number): string {
+  if (!acc.lastLogin) return "Never"
+  if (accountStore.account!.id === acc.id) return "Active now";
   // Convert to Date object if it's not already
   const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
+
   // Time intervals in seconds
   const intervals = {
     year: 31536000,
@@ -262,10 +262,10 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
   // Calculate time difference
   for (const [unit, secondsInUnit] of Object.entries(intervals)) {
     const interval = Math.floor(seconds / secondsInUnit);
-    
+
     if (interval >= 1) {
-      return interval === 1 
-        ? `${interval} ${unit} ago` 
+      return interval === 1
+        ? `${interval} ${unit} ago`
         : `${interval} ${unit}s ago`;
     }
   }
@@ -288,9 +288,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
         <div class="flex flex-col gap-4">
           <div class="flex flex-col sm:flex-row justify-between gap-4">
             <div class="relative w-full sm:w-96">
-              <Search
-                class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
-              />
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input v-model="searchQuery" placeholder="Search users..." class="pl-10" />
             </div>
 
@@ -324,10 +322,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
             </div>
           </div>
           <!-- Empty State -->
-          <div
-            v-else-if="filteredAccounts.length === 0"
-            class="flex flex-col items-center justify-center py-12 gap-4"
-          >
+          <div v-else-if="filteredAccounts.length === 0" class="flex flex-col items-center justify-center py-12 gap-4">
             <div class="text-center space-y-2">
               <h3 class="text-lg font-medium">No users found</h3>
               <p class="text-sm text-muted-foreground">
@@ -338,11 +333,8 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
 
           <!-- Card Grid -->
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div
-              v-for="account in filteredAccounts"
-              :key="account.id"
-              class="border bg-card text-card-foreground rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col"
-            >
+            <div v-for="account in filteredAccounts" :key="account.id"
+              class="border bg-card text-card-foreground rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col">
               <div class="flex items-start gap-3">
                 <div class="relative">
                   <Avatar class="size-20 bg-muted">
@@ -355,10 +347,8 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
                       </template>
                     </AvatarFallback>
                   </Avatar>
-                  <Badge
-                    :variant="account.status === 'Active' ? 'default' : 'secondary'"
-                    class="capitalize text-foreground absolute -bottom-1 left-3.25 h-5 px-1.5 text-xs"
-                  >
+                  <Badge :variant="account.status === 'Active' ? 'default' : 'secondary'"
+                    class="capitalize text-foreground absolute -bottom-1 left-3.25 h-5 px-1.5 text-xs">
                     {{ account.status }}
                   </Badge>
                 </div>
@@ -376,7 +366,8 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
               </div>
 
               <div class="mt-4 pt-4 border-t flex items-center justify-between">
-                <div class="text-sm text-muted-foreground">Last active: {{ getTimeAgo(account, account.lastLogin) }}</div>
+                <div class="text-sm text-muted-foreground">Last active: {{ getTimeAgo(account, account.lastLogin) }}
+                </div>
                 <Button size="sm" @click="openUserDetails(account)" class="h-8 text-">
                   Edit
                 </Button>
@@ -425,11 +416,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
               </div>
               <div class="space-y-1 col-span-2">
                 <Label for="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  v-model="selectedAccount.firstName"
-                  placeholder="First name"
-                />
+                <Input id="firstName" v-model="selectedAccount.firstName" placeholder="First name" />
               </div>
               <div class="space-y-1 col-span-2">
                 <Label for="lastName">Last Name</Label>
@@ -439,16 +426,11 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
             <div class="grid grid-cols-4 gap-4">
               <div class="space-y-1 col-span-2">
                 <Label for="email">Email</Label>
-                <Input
-                  id="email"
-                  v-model="selectedAccount.email"
-                  type="email"
-                  placeholder="Email"
-                />
+                <Input id="email" v-model="selectedAccount.email" type="email" placeholder="Email" />
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="role">Role</Label>
-                <Select id="role"  v-model="selectedAccount.role">
+                <Select id="role" v-model="selectedAccount.role">
                   <SelectTrigger class="h-8 w-full">
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
@@ -460,7 +442,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="status">Status</Label>
-                <Select id="status"  v-model="selectedAccount.status">
+                <Select id="status" v-model="selectedAccount.status">
                   <SelectTrigger class="h-8 w-full">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -474,22 +456,13 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
 
             <div class="space-y-1">
               <Label for="password">New Password</Label>
-              <Input
-                id="password"
-                v-model="password"
-                type="password"
-                placeholder="Leave blank to keep current"
-              />
+              <Input id="password" v-model="password" type="password" placeholder="Leave blank to keep current" />
             </div>
 
             <div class="space-y-1">
               <Label for="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                v-model="confirmPassword"
-                type="password"
-                placeholder="Confirm new password"
-              />
+              <Input id="confirmPassword" v-model="confirmPassword" type="password"
+                placeholder="Confirm new password" />
             </div>
           </div>
 
@@ -505,8 +478,8 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
     </Dialog>
 
     <!-- Add User Dialog -->
-    <Dialog v-model:open="isAddUserDialogOpen" @update:open="(val) => { 
-      if (!val) resetNewUserForm() 
+    <Dialog v-model:open="isAddUserDialogOpen" @update:open="(val) => {
+      if (!val) resetNewUserForm()
     }">
       <DialogContent class="sm:max-w-[525px]">
         <DialogHeader>
@@ -520,7 +493,8 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 class="text-lg font-medium">{{ !newUser.firstName && !newUser.lastName ? 'New User' : `${newUser.firstName} ${newUser.lastName}` }}</h3>
+              <h3 class="text-lg font-medium">{{ !newUser.firstName && !newUser.lastName ? 'New User' :
+                `${newUser.firstName} ${newUser.lastName}` }}</h3>
             </div>
           </div>
 
@@ -541,11 +515,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
               </div>
               <div class="space-y-1 col-span-2">
                 <Label for="new-firstName">First Name</Label>
-                <Input
-                  id="new-firstName"
-                  v-model="newUser.firstName"
-                  placeholder="First name"
-                />
+                <Input id="new-firstName" v-model="newUser.firstName" placeholder="First name" />
               </div>
               <div class="space-y-1 col-span-2">
                 <Label for="new-lastName">Last Name</Label>
@@ -555,12 +525,7 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
             <div class="grid grid-cols-4 gap-4">
               <div class="space-y-1 col-span-2">
                 <Label for="new-email">Email</Label>
-                <Input
-                  id="new-email"
-                  v-model="newUser.email"
-                  type="email"
-                  placeholder="Email"
-                />
+                <Input id="new-email" v-model="newUser.email" type="email" placeholder="Email" />
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="new-role">Role</Label>
@@ -590,22 +555,13 @@ function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
 
             <div class="space-y-1">
               <Label for="new-password">Password</Label>
-              <Input
-                id="new-password"
-                v-model="newUser.password"
-                type="password"
-                placeholder="Password"
-              />
+              <Input id="new-password" v-model="newUser.password" type="password" placeholder="Password" />
             </div>
 
             <div class="space-y-1">
               <Label for="new-confirmPassword">Confirm Password</Label>
-              <Input
-                id="new-confirmPassword"
-                v-model="newUser.confirmPassword"
-                type="password"
-                placeholder="Confirm password"
-              />
+              <Input id="new-confirmPassword" v-model="newUser.confirmPassword" type="password"
+                placeholder="Confirm password" />
             </div>
           </div>
 
