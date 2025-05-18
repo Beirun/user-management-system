@@ -130,7 +130,7 @@ const requests = ref<FrontendUnifiedRequest[]>([]);
 const employees = ref<Employee[]>([]);
 const isLoading = ref(false);
 const searchQuery = ref('');
-
+const isSubmitting = ref(false);
 const requestService = useRequestService();
 const employeeService = useEmployeeService();
 const toastService = useToastService();
@@ -362,7 +362,7 @@ const saveRequestChanges = async () => {
     
     return;
   }
-    isLoading.value = true;
+    isSubmitting.value = true;
 
   const form = selectedRequestForEdit.value;
   let payload: UpdateRequestPayload = { status: form.status }; // Request date not typically updated via PUT payload
@@ -370,18 +370,18 @@ const saveRequestChanges = async () => {
   if (form.type === 'Equipment' || form.type === 'Resources') {
     const validItems = form.items.filter(item => item.name && item.quantity > 0);
     if (validItems.length === 0) {
-    isLoading.value = false;
+    isSubmitting.value = false;
 
       toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource (name and quantity > 0) is required.` } as Toast); return;
     }
     payload.items = validItems.map(item => ({ name: item.name, quantity: item.quantity }));
   } else if (form.type === 'Leave') {
     if (!editStartDateForPicker.value || !editEndDateForPicker.value) {
-    isLoading.value = false;
+    isSubmitting.value = false;
       toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
     }
     if (editStartDateForPicker.value.compare(editEndDateForPicker.value) > 0) {
-    isLoading.value = false;
+    isSubmitting.value = false;
       toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
     }
     payload.startDate = editStartDateForPicker.value.toString();
@@ -398,14 +398,14 @@ const saveRequestChanges = async () => {
         items: form.items
       } as ResourcesWorkflowPayload)
     }
-  isLoading.value = true;
+  isSubmitting.value = true;
   try {
     await requestService.update(form.id!, payload);
     isEditDialogOpen.value = false; selectedRequestForEdit.value = null;
-    isLoading.value = false;
+    isSubmitting.value = false;
     await fetchRequestsAndEmployees();
   } catch (error) { console.error("Error updating request:", error); }
-  finally { isLoading.value = false; }
+  finally { isSubmitting.value = false; }
 };
 
 // --- Add New Request Logic ---
@@ -455,7 +455,7 @@ watch(() => newRequestForm.value.type, (newType, oldType) => {
 });
 
 const addNewRequest = async () => {
-  isLoading.value = true;
+  isSubmitting.value = true;
   const form = newRequestForm.value;
   if (form.employeeId === undefined) {
     toastService.error({ title: 'Validation Error', description: 'Please select an employee.' } as Toast); return;
@@ -469,22 +469,22 @@ const addNewRequest = async () => {
   if (form.type === 'Equipment' || form.type === 'Resources') {
     const validItems = form.items.filter(item => item.name && item.quantity > 0);
     if (validItems.length === 0) {
-      isLoading.value = false;
+      isSubmitting.value = false;
       toastService.error({ title: 'Validation Error', description: `At least one valid ${form.type.toLowerCase()} item/resource (name and quantity > 0) is required.` } as Toast); return;
     }
     payload = { employeeId: form.employeeId, type: form.type, status: form.status, requestDate: form.requestDate, items: validItems.map(item => ({ name: item.name, quantity: item.quantity })) };
   } else if (form.type === 'Leave') {
     if (!newStartDateForPicker.value || !newEndDateForPicker.value) {
-      isLoading.value = false;
+      isSubmitting.value = false;
       toastService.error({ title: 'Validation Error', description: 'Start and End dates are required.' } as Toast); return;
     }
     if (newStartDateForPicker.value.compare(newEndDateForPicker.value) > 0) {
-      isLoading.value = false;
+      isSubmitting.value = false;
       toastService.error({ title: 'Invalid Dates', description: 'End date cannot be before start date.' } as Toast); return;
     }
     payload = { employeeId: form.employeeId, type: 'Leave', status: form.status, requestDate: form.requestDate, startDate: newStartDateForPicker.value.toString(), endDate: newEndDateForPicker.value.toString() };
   } else {
-    isLoading.value = false;
+    isSubmitting.value = false;
     toastService.error({ title: 'Error', description: 'Invalid request type.' } as Toast); return;
   }
   try {
@@ -500,11 +500,11 @@ const addNewRequest = async () => {
         items: form.items
       } as ResourcesWorkflowPayload)
     }
-    isLoading.value = false;
+    isSubmitting.value = false;
     isAddRequestDialogOpen.value = false;
     await fetchRequestsAndEmployees();
   } catch (error) { console.error("Error adding new request:", error); }
-  finally { isLoading.value = false; }
+  finally { isSubmitting.value = false; }
 };
 
 // --- Lifecycle Hooks ---
@@ -737,9 +737,9 @@ watch(editEndDateForPicker, (val) => { if (selectedRequestForEdit.value?.type ==
     </div>
     <DialogFooter class="pt-4 border-t">
       <Button variant="outline" @click="isEditDialogOpen = false">Cancel</Button>
-      <Button @click="saveRequestChanges" class="text-foreground" :disabled="isLoading">
-        <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-        {{ isLoading ? 'Saving...' : 'Save Changes' }}
+      <Button @click="saveRequestChanges" class="text-foreground" :disabled="isSubmitting">
+        <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+        {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
       </Button>
     </DialogFooter>
   </DialogContent>
@@ -845,9 +845,9 @@ watch(editEndDateForPicker, (val) => { if (selectedRequestForEdit.value?.type ==
             </div>
             <DialogFooter class="pt-4 border-t">
                 <Button variant="outline" @click="isAddRequestDialogOpen = false">Cancel</Button>
-                <Button @click="addNewRequest" class="text-foreground" :disabled="isLoading">
-                   <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-                   {{ isLoading ? 'Adding...' : 'Add Request' }}
+                <Button @click="addNewRequest" class="text-foreground" :disabled="isSubmitting">
+                   <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+                   {{ isSubmitting ? 'Adding...' : 'Add Request' }}
                 </Button>
             </DialogFooter>
         </DialogContent>

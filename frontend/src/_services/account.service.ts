@@ -6,16 +6,7 @@ import { environment } from '@/environments/environment';
 import { useAccountStore } from '@/stores/account';
 import { useToastService } from '@/_services/toast.service'; 
 import type { Toast } from '@/models/toast';
-type NewAccount = {
-    title: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    role: string;
-    acceptTerms: boolean;
-}
+import type { NewAccount } from '@/models/account';
 
 export function useAccountService() {
     const accountStore = useAccountStore();
@@ -38,12 +29,7 @@ export function useAccountService() {
         if (account.value?.jwtToken) {
             headers['Authorization'] = `Bearer ${account.value.jwtToken}`;
         }
-        console.log("Fetch Body:",{
-            method,
-            headers,
-            credentials: 'include',
-            body: body ? JSON.stringify(body) : undefined
-        })
+        
         const response = await fetch(url, {
             method,
             headers,
@@ -64,24 +50,20 @@ export function useAccountService() {
             throw new Error(error.message || 'Request failed');
         }
 
-        console.log('Response:', response);
         return response.json();
     }
 
     async function isEmailVerified(email: string): Promise<any> {
         const response = await fetchRequest('/is-email-verified', 'POST', { email });
-        console.log('Email verification response:', response);
         return response;
 
     }
     async function emailExists(email: string): Promise<any> {
         const response = await fetchRequest('/email-exists', 'POST', { email });
-        console.log('Email exists response:', response);
         return response;
     }
     async function isPasswordCorrect(email: string, password: string): Promise<any> {
         const response = await fetchRequest('/is-password-correct', 'POST', { email, password });
-        console.log('Password correctness response:', response);
         return response;
     }
 
@@ -102,7 +84,6 @@ export function useAccountService() {
     async function logout(): Promise<void> {
         try {
             const res = await fetchRequest('/revoke-token', 'POST', {});
-            console.log("res", res);   
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
@@ -125,7 +106,6 @@ export function useAccountService() {
 
     // Account management methods
     async function register(newAccount: NewAccount): Promise<any> {
-        console.log('Registering new account:', newAccount);
         const response = await fetchRequest('/register', 'POST', newAccount);        
         return response;
     }
@@ -159,7 +139,7 @@ export function useAccountService() {
         return await fetchRequest<Account>(`/${id}`, 'GET');
     }
 
-    async function create(params: Partial<Account>): Promise<void> {
+    async function create(params: Partial<NewAccount>): Promise<void> {
         await fetchRequest('/', 'POST', params);
     }
 
