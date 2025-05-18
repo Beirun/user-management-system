@@ -25,8 +25,9 @@ import { onBeforeMount, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountStore } from '@/stores/account'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { User } from 'lucide-vue-next'
+import { User, UserCog, RefreshCw } from 'lucide-vue-next'
 import { useAccountService } from '@/_services/account.service'
+
 const router = useRouter()
 const isDialogOpen = ref(false)
 const accountStore = useAccountStore()
@@ -74,22 +75,22 @@ const saveChanges = async () => {
         return
       }
     }
-    
+
     const { update } = useAccountService()
     const updateData = {
       ...currentAccount.value,
       ...(password.value ? { password: password.value } : {}),
     }
-    
+
     await update(currentAccount.value.id, updateData)
-    
+
     isLoading.value = false
     useToastService().success({
       title: 'Success',
       description: 'User updated successfully',
       type: 'success',
     })
-    
+
     // Reset password fields
     password.value = ''
     confirmPassword.value = ''
@@ -102,7 +103,7 @@ const saveChanges = async () => {
       description: 'Failed to update user',
       type: 'error',
     })
-      isLoading.value = false
+    isLoading.value = false
   }
 }
 </script>
@@ -117,7 +118,8 @@ const saveChanges = async () => {
           <Avatar class="size-80">
             <AvatarImage src="/src/assets/profile.jpg" />
             <AvatarFallback class="bg-muted">
-              <User class="h-20 w-20 text-muted-foreground" />
+              <User v-if="currentAccount.role === 'User'" class="size-30 text-muted-foreground" />
+              <UserCog v-else class="size-30 text-muted-foreground" />
             </AvatarFallback>
           </Avatar>
 
@@ -198,57 +200,38 @@ const saveChanges = async () => {
                     </div>
                     <div class="space-y-1 col-span-2">
                       <Label for="firstName">First Name</Label>
-                      <Input
-                        id="firstName"
-                        v-model="currentAccount.firstName"
-                        placeholder="First name"
-                      />
+                      <Input id="firstName" v-model="currentAccount.firstName" placeholder="First name" />
                     </div>
                     <div class="space-y-1 col-span-2">
                       <Label for="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        v-model="currentAccount.lastName"
-                        placeholder="Last name"
-                      />
+                      <Input id="lastName" v-model="currentAccount.lastName" placeholder="Last name" />
                     </div>
                   </div>
 
                   <div class="space-y-1">
                     <Label for="email">Email</Label>
-                    <Input
-                      id="email"
-                      v-model="currentAccount.email"
-                      type="email"
-                      placeholder="Email"
-                    />
+                    <Input id="email" v-model="currentAccount.email" type="email" placeholder="Email" />
                   </div>
 
                   <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
                       <Label for="password">New Password</Label>
-                      <Input
-                        id="password"
-                        v-model="password"
-                        type="password"
-                        placeholder="Leave blank to keep current"
-                      />
+                      <Input id="password" v-model="password" type="password"
+                        placeholder="Leave blank to keep current" />
                     </div>
                     <div class="space-y-1">
                       <Label for="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        v-model="confirmPassword"
-                        type="password"
-                        placeholder="Confirm new password"
-                      />
+                      <Input id="confirmPassword" v-model="confirmPassword" type="password"
+                        placeholder="Confirm new password" />
                     </div>
                   </div>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-4">
                   <Button variant="outline" @click="isDialogOpen = false"> Cancel </Button>
-                  <Button :disabled="isLoading" class="text-foreground" @click="saveChanges"> <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" /> {{ isLoading ? 'Saving...' : 'Save Changes' }} </Button>
+                  <Button :disabled="isLoading" class="text-foreground" @click="saveChanges">
+                    <RefreshCw v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" /> {{ isLoading ? 'Saving...' : 'Save Changes' }}
+                  </Button>
                 </div>
               </div>
             </DialogContent>

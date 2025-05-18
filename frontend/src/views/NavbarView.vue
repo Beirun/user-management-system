@@ -29,10 +29,10 @@ const handleLogout = async () => {
   try {
     await logout()
     accountStore.logout()
-    const toastOptions : Toast = {
-        title: "Logout Successful",
-        description: "Logged out successfully.",
-        type: "success",
+    const toastOptions: Toast = {
+      title: "Logout Successful",
+      description: "Logged out successfully.",
+      type: "success",
     }
     isLoggingOut.value = false
     toast.success(toastOptions);
@@ -52,29 +52,21 @@ const handleLogout = async () => {
 
 <template>
   <header
-    class="sticky top-0 flex justify-center z-50 w-screen border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-  >
+    class="sticky top-0 flex justify-center z-50 w-screen border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="container flex h-16 items-center justify-between w-full">
       <div class="flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-6 w-6"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
           <path d="M9 10h6" />
           <path d="M12 7v6" />
         </svg>
-        <RouterLink :to="accountStore.account?.role === 'Admin' ? '/admin/users' : '/user/dashboard'" class="text-lg font-semibold">EduManage</RouterLink>
+        <RouterLink :to="accountStore.account?.role === 'Admin' ? '/admin/users' : '/user/dashboard'"
+          class="text-lg font-semibold">EduManage</RouterLink>
       </div>
 
       <div class="flex items-center gap-2">
-        
+
 
         <!-- Admin Specific Navigation Links -->
         <template v-if="accountStore.account?.role === 'Admin'">
@@ -111,20 +103,17 @@ const handleLogout = async () => {
           </Button>
         </RouterLink>
         <div class="flex items-center gap-2">
-           <Switch
-              :checked="mode === 'dark'"
-              @click="toggleTheme"
-              class="data-[state=checked]:bg-primary border-2 border-foreground "
-            >
-              <template #thumb>
-                <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary " />
-                <Moon v-else class="h-4 w-4 text-primary" />
-              </template>
-            </Switch>
+          <Switch :model-value="mode === 'light'" @click="toggleTheme"
+            class="data-[state=checked]:bg-foreground border-1 border-foreground ">
+            <template #thumb>
+              <Sun v-if="mode === 'light'" class="size-4 text-foreground " />
+              <Moon v-else class="size-4 text-background" />
+            </template>
+          </Switch>
         </div>
 
         <Button :disabled="isLoggingOut" variant="outline" size="sm" class="gap-2" @click="handleLogout">
-          <RefreshCw v-if="isLoggingOut" class="mr-2 h-4 w-4 animate-spin" /> 
+          <RefreshCw v-if="isLoggingOut" class="mr-2 h-4 w-4 animate-spin" />
           <LogOut v-else class="h-4 w-4 mr-2" />
           <span>Logout</span>
         </Button>
