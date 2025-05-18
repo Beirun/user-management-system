@@ -52,16 +52,16 @@ export function useWorkflowService() {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             const result = await response.json();
-            if (result.message && (method === 'POST' || method === 'PUT' || method === 'DELETE') && !(method === 'POST' && (endpoint === '/' || endpoint === '/onboarding'))) {
-                 // Show toast for messages, but not if the result is the created/updated object itself for generic create/onboarding
-                 toast.success({ title: 'Success', description: result.message } as Toast);
-            } else if ((method === 'POST' || method === 'PUT') && (response.status === 200 || response.status === 201)) {
-                // Generic success toast if an object is returned (e.g. created/updated workflow)
-                // and no specific message was part of the JSON (or it's not a simple message response)
-                if (!result.message) { // Avoid double-toasting if message was already handled
-                    toast.success({ title: 'Success', description: 'Operation completed successfully.' } as Toast);
-                }
-            }
+            // if (result.message && (method === 'POST' || method === 'PUT' || method === 'DELETE') && !(method === 'POST' && (endpoint === '/' || endpoint === '/onboarding'))) {
+            //      // Show toast for messages, but not if the result is the created/updated object itself for generic create/onboarding
+            //      toast.success({ title: 'Success', description: result.message } as Toast);
+            // } else if ((method === 'POST' || method === 'PUT') && (response.status === 200 || response.status === 201)) {
+            //     // Generic success toast if an object is returned (e.g. created/updated workflow)
+            //     // and no specific message was part of the JSON (or it's not a simple message response)
+            //     if (!result.message) { // Avoid double-toasting if message was already handled
+            //         toast.success({ title: 'Success', description: 'Operation completed successfully.' } as Toast);
+            //     }
+            // }
             return result as T;
         }
 

@@ -36,7 +36,7 @@ import NavbarView from '@/views/NavbarView.vue'
 import { useAccountService } from '@/_services/account.service'
 import { useToastService } from '@/_services/toast.service'
 import { type Toast } from '@/models/toast'
-import { type Account } from '@/models/account'
+import { type Account, type NewAccount } from '@/models/account'
 import { onBeforeMount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAccountStore } from '@/stores/account'
@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+
 const router = useRouter()
 const accountStore = useAccountStore()
 const accounts = ref<Account[]>([])
@@ -55,6 +56,20 @@ const isLoading = ref(true)
 const searchQuery = ref('')
 const selectedAccount = ref<Account | null>(null)
 const isDialogOpen = ref(false)
+const isCreatingUser = ref(false)
+const isAddUserDialogOpen = ref(false)
+
+const newUser = ref({
+  title: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  role: '',
+  status: '',
+  acceptTerms: true,
+})
 
 const filteredAccounts = computed(() => {
   if (!searchQuery.value) return accounts.value
@@ -90,12 +105,24 @@ const openUserDetails = (account: Account) => {
 }
 const password = ref('')
 const confirmPassword = ref('')
+const resetNewUserForm = () => {
+  newUser.value = {
+    title: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: '',
+    status: '',
+    acceptTerms: true,
+  }
+}
 
 const saveChanges = async () => {
   try {
     isSubmitting.value = true
     if (!selectedAccount.value){
-      
       isSubmitting.value = false
       return
     }
@@ -116,7 +143,7 @@ const saveChanges = async () => {
     const { update } = useAccountService()
     const updateData = {
       ...selectedAccount.value,
-      ...(password.value ? { password: password.value } : {}),
+      ...(password.value ? { password: password.value, confirmPassword: confirmPassword.value } : {}),
     }
 
     await update(selectedAccount.value.id, updateData)
@@ -144,6 +171,61 @@ const saveChanges = async () => {
     isSubmitting.value = false
   }
 }
+
+const createUser = async () => {
+  try {
+    if(!newUser.value.email || !newUser.value.password || !newUser.value.confirmPassword || !newUser.value.firstName || !newUser.value.lastName || !newUser.value.role || !newUser.value.status) {
+      useToastService().error({
+        title: 'Error',
+        description: 'All fields are required',
+        type: 'error',
+      })
+      return
+    }
+    isCreatingUser.value = true
+    const { create } = useAccountService()
+
+    // Validate passwords match
+    if (newUser.value.password !== newUser.value.confirmPassword) {
+      useToastService().error({
+        title: 'Error',
+        description: 'Passwords do not match',
+        type: 'error',
+      })
+      isCreatingUser.value = false
+      return
+    }
+    console.log(newUser.value)
+    await create(newUser.value as NewAccount)
+
+    
+    useToastService().success({
+      title: 'Success',
+      description: 'User created successfully',
+      type: 'success',
+    })
+
+    // Reset form
+    newUser.value = {
+      title: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: '',
+      status: '',
+      acceptTerms: true,
+    }
+
+    isAddUserDialogOpen.value = false
+    await fetchAccounts() // Refresh the list
+  } catch (error) {
+  } finally {
+    isCreatingUser.value = false
+  }
+}
+
 onBeforeMount(async () => {
   const account = accountStore.getAccount()
   if (!account || account.role !== 'Admin') {
@@ -158,7 +240,7 @@ onBeforeMount(async () => {
   await fetchAccounts()
 })
 
- function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
+function getTimeAgo(acc : Account,timestamp: Date | string | number): string {
   if(!acc.lastLogin) return "Never"
   if(accountStore.account!.id === acc.id) return "Active now";
   // Convert to Date object if it's not already
@@ -217,26 +299,30 @@ onBeforeMount(async () => {
                 <RefreshCw class="mr-2 h-4 w-4" />
                 Refresh
               </Button>
+              <Button class="text-foreground" size="sm" @click="isAddUserDialogOpen = true">
+                <UserPlus class="mr-2 h-4 w-4" />
+                Add User
+              </Button>
             </div>
           </div>
 
           <!-- Loading State -->
-<div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-  <div v-for="i in 8" :key="i" class="border rounded-lg p-4 bg-card">
-    <div class="flex items-start gap-3">
-      <Skeleton class="h-20 w-20 rounded-full" />
-      <div class="flex-1 space-y-2">
-        <Skeleton class="h-5 w-[140px]" />
-        <Skeleton class="h-4 w-[100px]" />
-        <Skeleton class="h-4 w-[160px]" />
-      </div>
-    </div>
-    <div class="mt-4 pt-4 border-t flex items-center justify-between">
-      <Skeleton class="h-4 w-[100px]" />
-      <Skeleton class="h-8 w-16 rounded-md" />
-    </div>
-  </div>
-</div>
+          <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div v-for="i in 8" :key="i" class="border rounded-lg p-4 bg-card">
+              <div class="flex items-start gap-3">
+                <Skeleton class="h-20 w-20 rounded-full" />
+                <div class="flex-1 space-y-2">
+                  <Skeleton class="h-5 w-[140px]" />
+                  <Skeleton class="h-4 w-[100px]" />
+                  <Skeleton class="h-4 w-[160px]" />
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t flex items-center justify-between">
+                <Skeleton class="h-4 w-[100px]" />
+                <Skeleton class="h-8 w-16 rounded-md" />
+              </div>
+            </div>
+          </div>
           <!-- Empty State -->
           <div
             v-else-if="filteredAccounts.length === 0"
@@ -264,12 +350,6 @@ onBeforeMount(async () => {
                       <template v-if="account.role === 'Admin'">
                         <UserCog class="size-10" />
                       </template>
-                      <!-- <template v-else-if="account.status === 'Active'">
-                        <UserCheck class="h-6 w-6" />
-                      </template>
-                      <template v-else-if="account.status === 'Inactive'">
-                        <UserX class="h-6 w-6" />
-                      </template> -->
                       <template v-else>
                         <User class="size-10" />
                       </template>
@@ -415,8 +495,126 @@ onBeforeMount(async () => {
 
           <div class="flex justify-end gap-2 pt-4">
             <Button variant="outline" @click="isDialogOpen = false"> Cancel </Button>
-            <Button :disabled="isSubmitting" @click="saveChanges" class="text-foreground">        <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
-              {{ isSubmitting ? 'Saving...' : 'Save Changes' }}</Button>
+            <Button :disabled="isSubmitting" @click="saveChanges" class="text-foreground">
+              <RefreshCw v-if="isSubmitting" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Add User Dialog -->
+    <Dialog v-model:open="isAddUserDialogOpen" @update:open="(val) => { 
+      if (!val) resetNewUserForm() 
+    }">
+      <DialogContent class="sm:max-w-[525px]">
+        <DialogHeader>
+          <DialogTitle>Add New User</DialogTitle>
+        </DialogHeader>
+        <div class="grid gap-10 py-4">
+          <div class="flex items-center gap-4">
+            <Avatar class="h-16 w-16 bg-muted">
+              <AvatarFallback class="text-muted-foreground">
+                <User class="h-8 w-8" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 class="text-lg font-medium">{{ !newUser.firstName && !newUser.lastName ? 'New User' : `${newUser.firstName} ${newUser.lastName}` }}</h3>
+            </div>
+          </div>
+
+          <div class="grid gap-8">
+            <div class="grid grid-cols-5 gap-4">
+              <div class="space-y-1 col-span-1">
+                <Label for="new-title">Title</Label>
+                <Select id="new-title" v-model="newUser.title">
+                  <SelectTrigger class="h-8 w-full">
+                    <SelectValue placeholder="Title" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Mr"> Mr </SelectItem>
+                    <SelectItem value="Mrs"> Mrs </SelectItem>
+                    <SelectItem value="Ms"> Ms </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-1 col-span-2">
+                <Label for="new-firstName">First Name</Label>
+                <Input
+                  id="new-firstName"
+                  v-model="newUser.firstName"
+                  placeholder="First name"
+                />
+              </div>
+              <div class="space-y-1 col-span-2">
+                <Label for="new-lastName">Last Name</Label>
+                <Input id="new-lastName" v-model="newUser.lastName" placeholder="Last name" />
+              </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4">
+              <div class="space-y-1 col-span-2">
+                <Label for="new-email">Email</Label>
+                <Input
+                  id="new-email"
+                  v-model="newUser.email"
+                  type="email"
+                  placeholder="Email"
+                />
+              </div>
+              <div class="space-y-1 col-span-1">
+                <Label for="new-role">Role</Label>
+                <Select id="new-role" v-model="newUser.role">
+                  <SelectTrigger class="h-8 w-full">
+                    <SelectValue placeholder="Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="User">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-1 col-span-1">
+                <Label for="new-status">Status</Label>
+                <Select id="new-status" v-model="newUser.status">
+                  <SelectTrigger class="h-8 w-full">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <Label for="new-password">Password</Label>
+              <Input
+                id="new-password"
+                v-model="newUser.password"
+                type="password"
+                placeholder="Password"
+              />
+            </div>
+
+            <div class="space-y-1">
+              <Label for="new-confirmPassword">Confirm Password</Label>
+              <Input
+                id="new-confirmPassword"
+                v-model="newUser.confirmPassword"
+                type="password"
+                placeholder="Confirm password"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4">
+            <Button variant="outline" @click="isAddUserDialogOpen = false"> Cancel </Button>
+            <Button :disabled="isCreatingUser" @click="createUser" class="text-foreground">
+              <RefreshCw v-if="isCreatingUser" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isCreatingUser ? 'Creating...' : 'Create User' }}
+            </Button>
           </div>
         </div>
       </DialogContent>
