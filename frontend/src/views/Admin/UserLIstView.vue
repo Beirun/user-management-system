@@ -226,8 +226,8 @@ const createUser = async () => {
   }
 }
 
+const account = accountStore.getAccount()
 onBeforeMount(async () => {
-  const account = accountStore.getAccount()
   if (!account || account.role !== 'Admin') {
     useToastService().error({
       title: 'Unauthorized',
@@ -430,7 +430,7 @@ function getTimeAgo(acc: Account, timestamp: Date | string | number): string {
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="role">Role</Label>
-                <Select id="role" v-model="selectedAccount.role">
+                <Select :disabled="selectedAccount.id === account?.id" id="role" v-model="selectedAccount.role">
                   <SelectTrigger class="h-8 w-full">
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
@@ -442,7 +442,7 @@ function getTimeAgo(acc: Account, timestamp: Date | string | number): string {
               </div>
               <div class="space-y-1 col-span-1">
                 <Label for="status">Status</Label>
-                <Select id="status" v-model="selectedAccount.status">
+                <Select :disabled="selectedAccount.id === account?.id" id="status" v-model="selectedAccount.status">
                   <SelectTrigger class="h-8 w-full">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>

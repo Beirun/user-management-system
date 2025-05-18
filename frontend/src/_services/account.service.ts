@@ -149,6 +149,7 @@ export function useAccountService() {
         // Update current account if it was updated
         if (account.value && data.id === account.value.id) {
             account.value = { ...account.value, ...data };
+            accountStore.setAccount(account.value);
         }
         
         return data;
