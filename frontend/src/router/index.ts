@@ -8,6 +8,9 @@ import DashboardView from '@/views/User/DashboardView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import VerifyEmailView from '@/views/VerifyEmailView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import EmployeeListView from '@/views/Admin/EmployeeListView.vue'
+import DepartmentsView from '@/views/Admin/DepartmentsView.vue'
+import RequestView from '@/views/Admin/RequestView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -64,7 +67,22 @@ const router = createRouter({
       path: '/account/reset-password',
       name: 'reset-password',
       component: ResetPasswordView
-    }
+    },
+    {
+      path: '/admin/employees',
+      name: 'admin-employees',
+      component: EmployeeListView
+    },
+    {
+      path: '/admin/departments',
+      name: 'admin-departments',
+      component: DepartmentsView
+    },    
+    {
+      path: '/admin/requests',
+      name: 'admin-requests',
+      component: RequestView
+    },
   ],
 })
 

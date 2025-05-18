@@ -14,7 +14,7 @@ function model(sequelize) {
         status: { type: DataTypes.STRING, allowNull: false },
         verificationToken: { type: DataTypes.STRING },
         verified: { type: DataTypes.DATE },
-        resetToken: { type: DataTypes.STRING },
+        resetToken: { type: DataTypes.STRING }, 
         resetTokenExpires: { type: DataTypes.DATE },
         passwordReset: { type: DataTypes.DATE },
         lastLogin: { type: DataTypes.DATE},
