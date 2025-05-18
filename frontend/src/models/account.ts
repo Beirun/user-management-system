@@ -11,3 +11,13 @@ export type Account =  {
     status: string;
     lastLogin: string;
 };
+export type NewAccount = {
+    title: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    role: string;
+    acceptTerms: boolean;
+}

@@ -1,121 +1,131 @@
 <script lang="ts" setup>
-import { RouterLink } from 'vue-router';
-import { useAccountService } from '@/_services/account.service'
-import { useToastService } from '@/_services/toast.service'
-import { type Toast } from '@/models/toast'
-import { useAccountStore } from '@/stores/account'
-import { useRouter } from 'vue-router'
-import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
-// Import new icons
-import { Sun, Moon, LogOut, User, Users, Building2, FileText } from 'lucide-vue-next'
-import { useColorMode } from '@vueuse/core'
+import { RouterLink, useRouter, useRoute } from 'vue-router';
+import { useAccountService } from '@/_services/account.service';
+import { useToastService } from '@/_services/toast.service';
+import { type Toast } from '@/models/toast';
+import { useAccountStore } from '@/stores/account';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Sun, Moon, LogOut, User, Users, Building2, FileText, RefreshCw } from 'lucide-vue-next';
+import { useColorMode } from '@vueuse/core';
+import { computed, ref, shallowRef, type Component } from 'vue'; // Added shallowRef and Component
 
-const mode = useColorMode({ disableTransition: false })
-const router = useRouter()
-const accountStore = useAccountStore()
-const { logout } = useAccountService()
-const toast = useToastService()
+// Define navigation items
+interface NavItem {
+  to: string;
+  label: string;
+  icon: Component; // Use Component type for icons
+  adminOnly?: boolean;
+  activePaths?: string[]; // Optional: for more complex active states if needed
+}
+
+const navItems: NavItem[] = [
+  { to: '/admin/users', label: 'Accounts', icon: shallowRef(Users), adminOnly: true },
+  { to: '/admin/employees', label: 'Employees', icon: shallowRef(Users), adminOnly: true },
+  { to: '/admin/departments', label: 'Departments', icon: shallowRef(Building2), adminOnly: true },
+  { to: '/admin/requests', label: 'Requests', icon: shallowRef(FileText), adminOnly: true },
+  { to: '/profile', label: 'Profile', icon: shallowRef(User) },
+];
+
+const mode = useColorMode({ disableTransition: false });
+const router = useRouter();
+const route = useRoute();
+const accountStore = useAccountStore();
+const { logout } = useAccountService();
+const toast = useToastService();
+
+const isLoggingOut = ref(false);
+
+const isAdmin = computed(() => accountStore.account?.role === 'Admin');
+
+const homeLink = computed(() => isAdmin.value ? '/admin/users' : '/user/dashboard');
+
+const displayedNavItems = computed(() => {
+  return navItems.filter(item => isAdmin.value || !item.adminOnly);
+});
+
+const isActive = (itemPath: string) => {
+  // Basic check, can be expanded with item.activePaths if needed
+  return route.path === itemPath || route.path.startsWith(itemPath + '/'); // Handles sub-routes like /admin/users/1
+};
 
 const toggleTheme = () => {
-  mode.value = mode.value === 'dark' ? 'light' : 'dark'
-}
+  mode.value = mode.value === 'dark' ? 'light' : 'dark';
+};
 
 const handleLogout = async () => {
+  isLoggingOut.value = true;
   try {
-    await logout()
-    accountStore.logout()
-    const toastOptions : Toast = {
-        title: "Logout Successful",
-        description: "Logged out successfully.",
-        type: "success",
-    }
-    toast.success(toastOptions);
-    router.push('/login')
+    await logout();
+    accountStore.logout();
+    toast.success({
+      title: "Logout Successful",
+      description: "Logged out successfully.",
+    } as Toast); // Type assertion if needed, or ensure Toast model matches
+    router.push('/login');
   } catch (error) {
-    const toastOptions: Toast = {
-      title: 'Logout',
+    toast.error({
+      title: 'Logout Failed',
       description: (error as Error).message,
-      type: 'error',
-    }
-    toast.error(toastOptions)
+    } as Toast);
+  } finally {
+    isLoggingOut.value = false;
   }
-}
-
+};
 </script>
 
 <template>
   <header
-    class="sticky top-0 flex justify-center z-50 w-screen border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-  >
-    <div class="container flex h-16 items-center justify-between w-full">
+    class="sticky top-0 z-50 flex w-screen justify-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="container flex h-16 w-full items-center justify-between">
       <div class="flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="h-6 w-6"
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6">
           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-          <path d="M9 10h6" />
-          <path d="M12 7v6" />
+          <path d="M9 10h6" /><path d="M12 7v6" />
         </svg>
-        <RouterLink :to="accountStore.account?.role === 'Admin' ? '/admin/users' : '/user/dashboard'" class="text-lg font-semibold">EduManage</RouterLink>
+        <RouterLink :to="homeLink" class="text-lg font-semibold">EduManage</RouterLink>
       </div>
 
-      <div class="flex items-center gap-2">
-        
-
-        <!-- Admin Specific Navigation Links -->
-        <template v-if="accountStore.account?.role === 'Admin'">
-          <RouterLink to="/admin/employees">
-            <Button variant="ghost" size="sm" class="gap-2">
-              <Users class="h-4 w-4" />
-              <span>Employees</span>
-            </Button>
-          </RouterLink>
-          <RouterLink to="/admin/departments">
-            <Button variant="ghost" size="sm" class="gap-2">
-              <Building2 class="h-4 w-4" />
-              <span>Departments</span>
-            </Button>
-          </RouterLink>
-          <RouterLink to="/admin/requests">
-            <Button variant="ghost" size="sm" class="gap-2">
-              <FileText class="h-4 w-4" />
-              <span>Requests</span>
-            </Button>
-          </RouterLink>
-        </template>
-        <!-- End Admin Specific Navigation Links -->
-        <RouterLink to="/profile">
-          <Button variant="ghost" size="sm" class="gap-2">
-            <User class="h-4 w-4" />
-            <span>Profile</span>
+      <nav class="flex items-center gap-1">
+        <!-- Navigation Links -->
+        <RouterLink
+          v-for="item in displayedNavItems"
+          :key="item.to"
+          :to="item.to"
+          :class="isActive(item.to) ? 'text-primary dark:text-[#407cfd] pointer-events-none' : ''"
+          custom
+          v-slot="{ navigate, href }"
+        >
+          <Button as="a" :href="href" @click="navigate" variant="ghost" size="sm" class="gap-2">
+            <component :is="item.icon" class="h-4 w-4" />
+            <span :class="isActive(item.to) ? 'dark:text-shadow-md/30 dark:text-shadow-[#155dfc]' : ''">
+              {{ item.label }}
+            </span>
           </Button>
         </RouterLink>
-        <div class="flex items-center gap-2">
-           <Switch
-              :checked="mode === 'dark'"
-              @click="toggleTheme"
-              class="data-[state=checked]:bg-primary border-2 border-foreground "
-            >
-              <template #thumb>
-                <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary " />
-                <Moon v-else class="h-4 w-4 text-primary" />
-              </template>
-            </Switch>
+
+        <!-- Theme Toggle -->
+        <div class="flex items-center gap-2 pl-2">
+          <Switch
+            :model-value="mode === 'light'"
+            @click="toggleTheme"
+            class="data-[state=checked]:bg-foreground border-1 border-foreground"
+          >
+            <template #thumb>
+              <Sun v-if="mode === 'light'" class="size-4 text-foreground" />
+              <Moon v-else class="size-4 text-background" />
+            </template>
+          </Switch>
         </div>
 
-        <Button variant="outline" size="sm" class="gap-2" @click="handleLogout">
-          <LogOut class="h-4 w-4" />
+        <!-- Logout Button -->
+        <Button :disabled="isLoggingOut" variant="outline" size="sm" class="ml-2 gap-1" @click="handleLogout">
+          <RefreshCw v-if="isLoggingOut" class="h-4 w-4 animate-spin" />
+          <LogOut v-else class="h-4 w-4" />
           <span>Logout</span>
         </Button>
-      </div>
+      </nav>
     </div>
   </header>
 </template>

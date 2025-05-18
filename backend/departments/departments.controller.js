@@ -42,18 +42,18 @@ function getById(req, res, next) {
 
 function create(req, res, next) {
     departmentService.create(req.body)
-        .then(()=> res.json({message: 'Department created successfully!'}))
+        .then(()=> res.json({message: 'Department created successfully.'}))
         .catch(next);
 }
 
 function update(req, res, next){
     departmentService.update(req.params.id, req.body)
-        .then(()=> res.json({message: 'Department updated successfully!'}))
+        .then(()=> res.json({message: 'Department updated successfully.'}))
         .catch(next);
 }
 
 function _delete(req, res, next) {
     departmentService.delete(req.params.id)
-        .then(() => res.json({ message: 'Department deleted successfully' }))
+        .then(() => res.json({ message: 'Department deleted successfully.' }))
         .catch(next);
 } 

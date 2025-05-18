@@ -2,3 +2,6 @@
 body {
   min-height: 100vh;
 }
+::-webkit-scrollbar {
+  display: none;
+}

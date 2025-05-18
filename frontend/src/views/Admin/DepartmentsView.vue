@@ -15,15 +15,19 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Search, Plus, RefreshCw, Briefcase, Pencil } from 'lucide-vue-next'
 import NavbarView from '@/views/NavbarView.vue'
 import { ref, computed, onBeforeMount } from 'vue'
-
-interface Department {
-  id: string
-  name: string
-  description: string
-  employeeCount: number
-  createdAt: string
-}
-
+import type { Department, NewDepartment } from '@/models/department'
+import { useDepartmentService } from '@/_services/department.service'
+import { useToastService } from '@/_services/toast.service'
+import type { Toast } from '@/models/toast'
+// interface Department {
+//   id: string
+//   name: string
+//   description: string
+//   employeeCount: number
+//   createdAt: string
+// }
+const toast = useToastService();
+const departmentService = useDepartmentService();
 const departments = ref<Department[]>([])
 const isLoading = ref(false)
 const searchQuery = ref('')
@@ -31,55 +35,57 @@ const selectedDepartment = ref<Department | null>(null)
 const isDialogOpen = ref(false)
 const isAddDialogOpen = ref(false)
 
-const newDepartment = ref<Omit<Department, 'id' | 'employeeCount' | 'createdAt'>>({
+const newDepartment = ref<NewDepartment>({
   name: '',
   description: '',
 })
 
-const mockDepartments: Department[] = [
-  {
-    id: '1',
-    name: 'Engineering',
-    description: 'Responsible for product development and technical solutions',
-    employeeCount: 42,
-    createdAt: '2020-05-15',
-  },
-  {
-    id: '2',
-    name: 'Marketing',
-    description: 'Handles brand promotion and customer acquisition',
-    employeeCount: 18,
-    createdAt: '2020-06-20',
-  },
-  {
-    id: '3',
-    name: 'Human Resources',
-    description: 'Manages recruitment, benefits, and employee relations',
-    employeeCount: 8,
-    createdAt: '2020-04-10',
-  },
-  {
-    id: '4',
-    name: 'Finance',
-    description: 'Oversees budgeting, accounting, and financial planning',
-    employeeCount: 12,
-    createdAt: '2020-07-05',
-  },
-  {
-    id: '5',
-    name: 'Product',
-    description: 'Defines product strategy and roadmap',
-    employeeCount: 15,
-    createdAt: '2021-01-12',
-  },
-  {
-    id: '6',
-    name: 'Customer Support',
-    description: 'Provides assistance and resolves customer issues',
-    employeeCount: 24,
-    createdAt: '2020-08-30',
-  },
-]
+// const mockDepartments: Department[] = [
+//   {
+//     id: '1',
+//     name: 'Engineering',
+//     description: 'Responsible for product development and technical solutions',
+//     employeeCount: 42,
+//     createdAt: '2020-05-15',
+//   },
+//   {
+//     id: '2',
+//     name: 'Marketing',
+//     description: 'Handles brand promotion and customer acquisition',
+//     employeeCount: 18,
+//     createdAt: '2020-06-20',
+//   },
+//   {
+//     id: '3',
+//     name: 'Human Resources',
+//     description: 'Manages recruitment, benefits, and employee relations',
+//     employeeCount: 8,
+//     createdAt: '2020-04-10',
+//   },
+//   {
+//     id: '4',
+//     name: 'Finance',
+//     description: 'Oversees budgeting, accounting, and financial planning',
+//     employeeCount: 12,
+//     createdAt: '2020-07-05',
+//   },
+//   {
+//     id: '5',
+//     name: 'Product',
+//     description: 'Defines product strategy and roadmap',
+//     employeeCount: 15,
+//     createdAt: '2021-01-12',
+//   },
+//   {
+//     id: '6',
+//     name: 'Customer Support',
+//     description: 'Provides assistance and resolves customer issues',
+//     employeeCount: 24,
+//     createdAt: '2020-08-30',
+//   },
+// ]
+const isAddingDepartment = ref(false)
+const isEditingDepartment = ref(false)
 
 const filteredDepartments = computed(() => {
   if (!searchQuery.value) return departments.value
@@ -90,12 +96,11 @@ const filteredDepartments = computed(() => {
   )
 })
 
-const fetchDepartments = () => {
+const fetchDepartments = async () => {
   isLoading.value = true
-  setTimeout(() => {
-    departments.value = mockDepartments
-    isLoading.value = false
-  }, 800)
+  const response = await departmentService.getAll();
+  departments.value = response
+  isLoading.value = false
 }
 
 const openDepartmentDetails = (department: Department) => {
@@ -103,14 +108,24 @@ const openDepartmentDetails = (department: Department) => {
   isDialogOpen.value = true
 }
 
-const saveChanges = () => {
-  if (selectedDepartment.value) {
-    departments.value = departments.value.map((dept) =>
-      dept.id === selectedDepartment.value!.id ? { ...selectedDepartment.value! } : dept
-    )
-    isDialogOpen.value = false
-    selectedDepartment.value = null
+const saveChanges = async () => {
+  isEditingDepartment.value = true
+  if (!selectedDepartment.value!.description || !selectedDepartment.value!.name) {
+    toast.error({
+      title: "Error",
+      description: "Please fill in all fields.",
+    } as Toast)
+    isEditingDepartment.value = false
+    return
   }
+  await departmentService.update(selectedDepartment.value!.id, selectedDepartment.value!)
+
+  isEditingDepartment.value = false
+  departments.value = await departmentService.getAll();
+
+  isDialogOpen.value = false
+  selectedDepartment.value = null
+
 }
 
 const openAddDepartmentDialog = () => {
@@ -118,15 +133,21 @@ const openAddDepartmentDialog = () => {
   isAddDialogOpen.value = true
 }
 
-const addNewDepartment = () => {
-  const newId = `DEPT-${String(departments.value.length + 10).padStart(3, '0')}`
-  const departmentToAdd: Department = {
-    id: newId,
-    ...newDepartment.value,
-    employeeCount: 0,
-    createdAt: new Date().toISOString().split('T')[0],
+const addNewDepartment = async () => {
+  isAddingDepartment.value = true
+  if (!newDepartment.value.description || !newDepartment.value.name) {
+    toast.error({
+      title: "Error",
+      description: "Please fill in all fields.",
+    } as Toast)
+    isAddingDepartment.value = false
+    return
   }
-  departments.value = [...departments.value, departmentToAdd]
+
+  await departmentService.create(newDepartment.value);
+  isAddingDepartment.value = false
+
+  departments.value = await departmentService.getAll();
   isAddDialogOpen.value = false
 }
 
@@ -172,7 +193,7 @@ onBeforeMount(() => {
 
             <div class="flex gap-2">
               <Button variant="outline" size="sm" @click="fetchDepartments" :disabled="isLoading">
-                <RefreshCw class="mr-2 h-4 w-4" :class="{'animate-spin': isLoading}" />
+                <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isLoading }" />
                 Refresh
               </Button>
               <Button size="sm" @click="openAddDepartmentDialog" class="text-foreground">
@@ -203,10 +224,8 @@ onBeforeMount(() => {
           </div>
 
           <!-- Empty State -->
-          <div
-            v-else-if="filteredDepartments.length === 0"
-            class="flex flex-col items-center justify-center py-12 gap-4 text-center"
-          >
+          <div v-else-if="filteredDepartments.length === 0"
+            class="flex flex-col items-center justify-center py-12 gap-4 text-center">
             <Briefcase class="h-16 w-16 text-muted-foreground" />
             <h3 class="text-xl font-medium">No departments found</h3>
             <p class="text-sm text-muted-foreground">
@@ -216,11 +235,8 @@ onBeforeMount(() => {
 
           <!-- Card Grid -->
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="department in filteredDepartments"
-              :key="department.id"
-              class="border bg-card text-card-foreground rounded-lg p-5 hover:shadow-lg transition-shadow duration-200 flex flex-col"
-            >
+            <div v-for="department in filteredDepartments" :key="department.id"
+              class="border bg-card text-card-foreground rounded-lg p-5 hover:shadow-lg transition-shadow duration-200 flex flex-col">
               <div class="flex items-start gap-4 mb-4">
                 <Avatar class="h-12 w-12 bg-muted border">
                   <AvatarFallback>
@@ -232,7 +248,7 @@ onBeforeMount(() => {
                     {{ department.name }}
                   </h3>
                   <p class="text-xs text-muted-foreground">
-                    Created: {{ formatDisplayDate(department.createdAt) }}
+                    Created: {{ formatDisplayDate(department.created) }}
                   </p>
                 </div>
               </div>
@@ -247,12 +263,8 @@ onBeforeMount(() => {
                 <Badge variant="secondary" class="px-2 py-0.5">
                   {{ department.employeeCount }} {{ department.employeeCount === 1 ? 'employee' : 'employees' }}
                 </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                  @click="openDepartmentDetails(department)"
-                >
+                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  @click="openDepartmentDetails(department)">
                   <Pencil class="h-4 w-4" />
                 </Button>
               </div>
@@ -289,27 +301,21 @@ onBeforeMount(() => {
           <div class="grid gap-4">
             <div class="space-y-1.5">
               <Label for="edit-name">Name *</Label>
-              <Input
-                id="edit-name"
-                v-model="selectedDepartment.name"
-                placeholder="Enter department name"
-                required
-              />
+              <Input id="edit-name" v-model="selectedDepartment.name" placeholder="Enter department name" required />
             </div>
             <div class="space-y-1.5">
               <Label for="edit-description">Description *</Label>
-              <Input
-                id="edit-description"
-                v-model="selectedDepartment.description"
-                placeholder="Enter department description"
-                required
-              />
+              <Input id="edit-description" v-model="selectedDepartment.description"
+                placeholder="Enter department description" required />
             </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isDialogOpen = false">Cancel</Button>
-            <Button @click="saveChanges" class="text-foreground">Save Changes</Button>
+            <Button @click="saveChanges" :disabled="isEditingDepartment" class="text-foreground">
+              <RefreshCw v-if="isEditingDepartment" class="mr-2 h-4 w-4 animate-spin" />
+              {{ isEditingDepartment ? 'Saving...' : 'Save Changes' }}
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -325,26 +331,18 @@ onBeforeMount(() => {
         <div class="grid gap-4 py-4">
           <div class="space-y-1.5">
             <Label for="new-name">Name *</Label>
-            <Input
-              id="new-name"
-              v-model="newDepartment.name"
-              placeholder="Enter department name"
-              required
-            />
+            <Input id="new-name" v-model="newDepartment.name" placeholder="Enter department name" required />
           </div>
           <div class="space-y-1.5">
             <Label for="new-description">Description *</Label>
-            <Input
-              id="new-description"
-              v-model="newDepartment.description"
-              placeholder="Enter department description"
-              required
-            />
+            <Input id="new-description" v-model="newDepartment.description!" placeholder="Enter department description"
+              required />
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" @click="isAddDialogOpen = false">Cancel</Button>
-            <Button @click="addNewDepartment">Add Department</Button>
+            <Button :disabled="isAddingDepartment" class="text-foreground" @click="addNewDepartment">{{
+              isAddingDepartment ? 'Adding...' : 'Add Department' }}</Button>
           </div>
         </div>
       </DialogContent>

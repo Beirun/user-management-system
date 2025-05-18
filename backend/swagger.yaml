@@ -1,17 +1,26 @@
 openapi: 3.0.0
 info:
-  title: Account API
+  title: Comprehensive API
   version: 1.0.0
-  description: API documentation for user authentication and account management
+  description: API documentation for user accounts, departments, employees, requests, and workflows.
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3000 # Adjust if your port is different
 
 tags:
   - name: Accounts
     description: Operations related to user accounts
+  - name: Departments
+    description: Operations related to company departments
+  - name: Employees
+    description: Operations related to employee records
+  - name: Requests
+    description: Operations related to employee requests (leave, items, etc.)
+  - name: Workflows
+    description: Operations related to various workflows
 
 paths:
+  # --- Account Endpoints (from previous response) ---
   /accounts/authenticate:
     post:
       tags: [Accounts]
@@ -25,27 +34,75 @@ paths:
               properties:
                 email:
                   type: string
+                  example: user@example.com
                 password:
                   type: string
+                  example: "password123"
               required: [email, password]
       responses:
         '200':
           description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccountBasicDetails'
+                  - type: object
+                    properties:
+                      jwtToken:
+                        type: string
+                      refreshToken:
+                        type: string
         '400':
-          description: Invalid credentials
+          description: Invalid credentials or account inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/refresh-token:
     post:
       tags: [Accounts]
-      summary: Refresh JWT token
+      summary: Refresh JWT token (uses refreshToken from HTTP-only cookie)
       responses:
         '200':
-          description: Token refreshed
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccountBasicDetails'
+                  - type: object
+                    properties:
+                      jwtToken:
+                        type: string
+                      refreshToken:
+                        type: string
+        '400':
+          description: Invalid or missing refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/revoke-token:
     post:
       tags: [Accounts]
-      summary: Revoke refresh token
+      summary: Revoke refresh token (uses token from body or HTTP-only cookie)
+      security:
+        - bearerAuth: []
       requestBody:
         required: false
         content:
@@ -55,11 +112,30 @@ paths:
               properties:
                 token:
                   type: string
+                  description: Refresh token to revoke (optional if sent via cookie)
       responses:
         '200':
           description: Token revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token revoked
+        '400':
+          description: Token is required or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/register:
     post:
@@ -70,31 +146,29 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                firstName:
-                  type: string
-                lastName:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                confirmPassword:
-                  type: string
-                acceptTerms:
-                  type: boolean
-              required: [title, firstName, lastName, email, password, confirmPassword, acceptTerms]
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
-        '200':
-          description: Registration successful
+        '201': # Changed to 201 for successful creation
+          description: Registration successful, verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful, please check your email for verification instructions
+        '400':
+          description: Validation error or email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/verify-email:
     post:
       tags: [Accounts]
-      summary: Verify email address
+      summary: Verify email address using a token
       requestBody:
         required: true
         content:
@@ -107,12 +181,26 @@ paths:
               required: [token]
       responses:
         '200':
-          description: Email verified
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Verification successful, you can now login
+        '400':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/forgot-password:
     post:
       tags: [Accounts]
-      summary: Forgot password request
+      summary: Request password reset
       requestBody:
         required: true
         content:
@@ -122,10 +210,29 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
               required: [email]
       responses:
         '200':
-          description: Password reset email sent
+          description: Password reset instructions sent (if email exists)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Please check your email for password reset instructions
+                  url:
+                    type: string
+                    format: url
+                    example: http://localhost:4200/account/reset-password?token=xxxxxxxx
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/validate-reset-token:
     post:
@@ -144,44 +251,53 @@ paths:
       responses:
         '200':
           description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token is valid
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/reset-password:
     post:
       tags: [Accounts]
-      summary: Reset password
+      summary: Reset password using a token
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                password:
-                  type: string
-                confirmPassword:
-                  type: string
-              required: [token, password, confirmPassword]
+              $ref: '#/components/schemas/ResetPasswordRequest'
       responses:
         '200':
           description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successful, you can now login
+        '400':
+          description: Validation error or invalid/expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  /accounts:
-    get:
-      tags: [Accounts]
-      summary: Get all accounts
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of accounts
-
+  /accounts/email-exists:
     post:
       tags: [Accounts]
-      summary: Create an account (admin only)
-      security:
-        - bearerAuth: []
+      summary: Check if an email address is already registered
       requestBody:
         required: true
         content:
@@ -189,54 +305,613 @@ paths:
             schema:
               type: object
               properties:
-                title:
-                  type: string
-                firstName:
-                  type: string
-                lastName:
-                  type: string
                 email:
                   type: string
-                password:
-                  type: string
-                confirmPassword:
-                  type: string
-                role:
-                  type: string
-              required: [title, firstName, lastName, email, password, confirmPassword, role]
+                  format: email
+              required: [email]
       responses:
         '200':
-          description: Account created
+          description: Email existence status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /accounts/is-email-verified:
+    post:
+      tags: [Accounts]
+      summary: Check if an email address is verified
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required: [email]
+      responses:
+        '200':
+          description: Email verification status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isVerified:
+                    type: boolean
+                  token:
+                    type: string
+                    nullable: true
+                    description: Verification token if not verified
+        '400':
+          description: Invalid input or email not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /accounts/is-password-correct:
+    post:
+      tags: [Accounts]
+      summary: Check if the provided password is correct for an email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        '200':
+          description: Password correctness status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isCorrect:
+                    type: boolean
+        '400':
+          description: Invalid input or email not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /accounts/: # Ensure trailing slash for consistency if fake backend expects it
+    get:
+      tags: [Accounts]
+      summary: Get all accounts (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountBasicDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Accounts]
+      summary: Create a new account (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBasicDetails'
+        '400':
+          description: Validation error or email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the account
+        schema:
+          type: integer
     get:
       tags: [Accounts]
       summary: Get account by ID
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         '200':
           description: Account data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBasicDetails'
         '401':
           description: Unauthorized
-
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       tags: [Accounts]
-      summary: Update account
+      summary: Update account by ID
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+      responses:
+        '200':
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountBasicDetails'
+        '400':
+          description: Validation error or email already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Accounts]
+      summary: Delete account by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Account deleted successfully
+        '400':
+          description: Cannot delete account with associated employee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # --- Department Endpoints ---
+  /departments/:
+    get:
+      tags: [Departments]
+      summary: Get all departments
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DepartmentDetailed'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Departments]
+      summary: Create a new department (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreateOrUpdate'
+      responses:
+        '201':
+          description: Department created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Department created successfully.
+        '400':
+          description: Validation error (e.g., name required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /departments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the department
+        schema:
+          type: integer
+    get:
+      tags: [Departments]
+      summary: Get department by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Department data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentDetailed'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [Departments]
+      summary: Update department by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreateOrUpdate'
+      responses:
+        '200':
+          description: Department updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Department updated successfully.
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Departments]
+      summary: Delete department by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      responses:
+        '200':
+          description: Department deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Department deleted successfully.
+        '400':
+          description: Cannot delete department with assigned employees
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # --- Employee Endpoints ---
+  /employees/:
+    get:
+      tags: [Employees]
+      summary: Get all employees
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of employees with associated details
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployeeDetailed' # getAll includes more details
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Employees]
+      summary: Create a new employee (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '201':
+          description: Employee created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee created successfully.
+                  employee:
+                    $ref: '#/components/schemas/EmployeeBase'
+        '400':
+          description: Validation error (e.g., missing fields, account/dept not found)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /employees/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the employee
+        schema:
+          type: integer
+    get:
+      tags: [Employees]
+      summary: Get employee by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Employee data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeWithDetails' # getById returns account and department details
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [Employees]
+      summary: Update employee by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+      responses:
+        '200':
+          description: Employee updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee updated successfully.
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Employees]
+      summary: Delete employee by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      responses:
+        '200':
+          description: Employee deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee deleted successfully.
+        '400':
+          description: Cannot delete employee with associated requests/workflows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /employees/{id}/transfer:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the employee to transfer
+        schema:
+          type: integer
+    post:
+      tags: [Employees]
+      summary: Transfer employee to a new department (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
       requestBody:
         required: true
         content:
@@ -244,40 +919,1139 @@ paths:
             schema:
               type: object
               properties:
-                title:
-                  type: string
-                firstName:
-                  type: string
-                lastName:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                confirmPassword:
-                  type: string
-                role:
-                  type: string
+                departmentId:
+                  type: integer
+                  description: ID of the new department
+              required: [departmentId]
       responses:
         '200':
-          description: Account updated
+          description: Employee transferred successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Employee transfered successfully.
+        '400':
+          description: Validation error (e.g., department not found, already in dept)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee or Target Department not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-    delete:
-      tags: [Accounts]
-      summary: Delete account
+  # --- Request (AppRequest) Endpoints ---
+  /requests/:
+    get:
+      tags: [Requests]
+      summary: Get all requests (filtered for non-Admins)
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
       responses:
         '200':
-          description: Account deleted
+          description: A list of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppRequestDetailed'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Requests]
+      summary: Create a new request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppRequestCreate'
+      responses:
+        '201':
+          description: Request created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Request created successfully.
+        '400':
+          description: Validation error (e.g., missing fields, invalid items/dates)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (e.g. user not an employee, or trying to create for other if not admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
+  /requests/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the request
+        schema:
+          type: integer
+    get:
+      tags: [Requests]
+      summary: Get request by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppRequestDetailed'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (user does not own request and is not Admin)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags: [Requests]
+      summary: Update request by ID
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppRequestUpdate'
+      responses:
+        '200':
+          description: Request updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Request updated successfully.
+        '400':
+          description: Validation error or request not in updatable state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (user cannot update this request)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Requests]
+      summary: Delete request by ID
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Request deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Request deleted successfully.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (user cannot delete this request or not in deletable state)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /requests/employee/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the employee
+        schema:
+          type: integer
+    get:
+      tags: [Requests]
+      summary: Get all requests for a specific employee
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of requests for the employee
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AppRequestDetailed'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (user cannot view these requests)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # --- Workflow Endpoints ---
+  /workflows/:
+    post:
+      tags: [Workflows]
+      summary: Create a generic workflow (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowCreateGeneric'
+      responses:
+        '201':
+          description: Workflow created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow' # Returns the created workflow
+        '400':
+          description: Validation error or employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/employee/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the employee
+        schema:
+          type: integer
+    get:
+      tags: [Workflows]
+      summary: Get all workflows for a specific employee
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of workflows for the employee
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workflow'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (user cannot view these workflows)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID of the workflow
+        schema:
+          type: integer
+    put:
+      tags: [Workflows]
+      summary: Update workflow status by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: Approved
+              required: [status]
+      responses:
+        '200':
+          description: Workflow updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow updated successfully.
+        '400':
+          description: Validation error (status required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Workflows]
+      summary: Delete workflow by ID (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      responses:
+        '200':
+          description: Workflow deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/onboarding:
+    post:
+      tags: [Workflows]
+      summary: Create an onboarding workflow (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeId:
+                  type: integer
+              required: [employeeId]
+      responses:
+        '201':
+          description: Onboarding workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow onboarding created successfully.
+        '400':
+          description: Employee ID required or employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/transfer:
+    post:
+      tags: [Workflows]
+      summary: Create a department transfer workflow (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeId:
+                  type: integer
+                oldDepartment:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                newDepartment:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+              required: [employeeId, oldDepartment, newDepartment]
+      responses:
+        '201':
+          description: Transfer workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow transfer created successfully.
+        '400':
+          description: Required fields missing or employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/leave:
+    post:
+      tags: [Workflows]
+      summary: Create a leave request workflow (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeId:
+                  type: integer
+                startDate:
+                  type: string
+                  format: date
+                  example: "2024-12-20"
+                endDate:
+                  type: string
+                  format: date
+                  example: "2024-12-24"
+              required: [employeeId, startDate, endDate]
+      responses:
+        '201':
+          description: Leave workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow request leave created successfully.
+        '400':
+          description: Required fields missing or employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /workflows/resources:
+    post:
+      tags: [Workflows]
+      summary: Create a resources request workflow (Admin only)
+      security:
+        - bearerAuth: [] # Role.Admin enforced by fake backend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeId:
+                  type: integer
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RequestItemBase'
+              required: [employeeId, items]
+      responses:
+        '201':
+          description: Resources workflow created successfully
+          content:
+            application/json:
+              schema: # Fake backend returns message, node service returns message + workflowId
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Workflow request item created successfully. # Matched to Node.js controller for /resources
+                  # workflowId: # If matching Node.js service more closely
+                  #   type: integer
+        '400':
+          description: Required fields missing, invalid items, or employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
+  schemas:
+    # --- Account Schemas (from previous response) ---
+    AccountBasicDetails:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, User]
+        status:
+          type: string
+          enum: [Active, Inactive] # Reflecting Node.js model for 'status'
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+          nullable: true
+        isVerified:
+          type: boolean
+        lastLogin:
+          type: string
+          format: date-time
+          nullable: true
+
+    RegisterRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Mr
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: "password123"
+        confirmPassword:
+          type: string
+          format: password
+          example: "password123"
+        acceptTerms:
+          type: boolean
+          example: true
+      required: [title, firstName, lastName, email, password, confirmPassword, acceptTerms]
+
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          format: password
+          minLength: 6
+        confirmPassword:
+          type: string
+          format: password
+      required: [token, password, confirmPassword]
+
+    CreateAccountRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 6
+        confirmPassword:
+          type: string
+          format: password
+        role:
+          type: string
+          enum: [Admin, User]
+        status:
+          type: string
+          enum: [Active, Inactive]
+          default: Active # Based on fake-backend
+      required: [title, firstName, lastName, email, password, confirmPassword, role]
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        password:
+          type: string
+          format: password
+          minLength: 6
+          nullable: true
+        confirmPassword:
+          type: string
+          format: password
+          nullable: true
+        role:
+          type: string
+          enum: [Admin, User]
+          nullable: true
+        status:
+          type: string
+          enum: [Active, Inactive]
+          nullable: true
+
+    # --- Department Schemas ---
+    DepartmentBase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required: [name, description]
+
+    DepartmentDetailed:
+      allOf:
+        - $ref: '#/components/schemas/DepartmentBase'
+        - type: object
+          properties:
+            employeeCount:
+              type: integer
+              readOnly: true
+
+    DepartmentCreateOrUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+      required: [name]
+
+
+    # --- Employee Schemas ---
+    EmployeeBase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        accountId:
+          type: integer
+        departmentId:
+          type: integer
+        position:
+          type: string
+        hireDate:
+          type: string
+          format: date
+          example: "YYYY-MM-DD"
+        status:
+          type: string
+          enum: [Active, Inactive, OnLeave] # Example statuses
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required: [accountId, departmentId, position, hireDate, status]
+
+    EmployeeAccountInfo: # For nested account info in employee
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        title:
+          type: string
+          nullable: true
+
+    EmployeeDepartmentInfo: # For nested department info in employee
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    EmployeeWithDetails: # For GET /employees/{id}
+      allOf:
+        - $ref: '#/components/schemas/EmployeeBase'
+        - type: object
+          properties:
+            account:
+              $ref: '#/components/schemas/EmployeeAccountInfo'
+              nullable: true
+            department:
+              $ref: '#/components/schemas/EmployeeDepartmentInfo'
+              nullable: true
+
+    EmployeeDetailed: # For GET /employees/ (includes workflows and requests)
+      allOf:
+        - $ref: '#/components/schemas/EmployeeWithDetails'
+        - type: object
+          properties:
+            workflows:
+              type: array
+              items:
+                $ref: '#/components/schemas/Workflow'
+              nullable: true
+            requests:
+              type: array
+              items:
+                $ref: '#/components/schemas/AppRequestDetailed' # Assuming detailed requests
+              nullable: true
+
+    EmployeeCreate:
+      type: object
+      properties:
+        accountId:
+          type: integer
+        departmentId:
+          type: integer
+        position:
+          type: string
+        hireDate:
+          type: string
+          format: date
+        status:
+          type: string
+      required: [accountId, departmentId, position, hireDate, status]
+
+    EmployeeUpdate: # Fields that can be updated directly on employee
+      type: object
+      properties:
+        position:
+          type: string
+          nullable: true
+        hireDate:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          nullable: true
+        # departmentId is updated via /transfer
+        # accountId is not typically changed post-creation
+
+    # --- Request (AppRequest) Schemas ---
+    RequestItemBase:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+      required: [name, quantity]
+
+    RequestItem:
+      allOf:
+        - $ref: '#/components/schemas/RequestItemBase'
+        - type: object
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            requestId:
+              type: integer
+              readOnly: true
+            created:
+              type: string
+              format: date-time
+              readOnly: true
+            updated:
+              type: string
+              format: date-time
+              nullable: true
+              readOnly: true
+
+    RequestLeaveBase:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+          example: "YYYY-MM-DD"
+        endDate:
+          type: string
+          format: date
+          example: "YYYY-MM-DD"
+      required: [startDate, endDate]
+
+    RequestLeave:
+      allOf:
+        - $ref: '#/components/schemas/RequestLeaveBase'
+        - type: object
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            requestId:
+              type: integer
+              readOnly: true
+            created:
+              type: string
+              format: date-time
+              readOnly: true
+            updated:
+              type: string
+              format: date-time
+              nullable: true
+              readOnly: true
+
+    AppRequestBase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        employeeId:
+          type: integer
+        type:
+          type: string
+          enum: [Leave, Item, Equipment, Resources]
+        status:
+          type: string
+          enum: [Pending, Approved, Rejected, Cancelled]
+        requestDate:
+          type: string
+          format: date # "YYYY-MM-DD"
+          example: "YYYY-MM-DD"
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required: [employeeId, type, status, requestDate]
+
+
+    AppRequestDetailed: # For GET operations
+      allOf:
+        - $ref: '#/components/schemas/AppRequestBase'
+        - type: object
+          properties:
+            requestItem: # Array of items if not 'Leave'
+              type: array
+              items:
+                $ref: '#/components/schemas/RequestItem'
+              nullable: true
+            requestLeave: # Single object if 'Leave'
+              $ref: '#/components/schemas/RequestLeave'
+              nullable: true
+
+    AppRequestCreate:
+      type: object
+      properties:
+        employeeId: # Optional, for Admin creating for others; otherwise taken from current user
+          type: integer
+          nullable: true
+        type:
+          type: string
+          enum: [Leave, Item, Equipment, Resources]
+        status: # Optional, defaults to Pending
+          type: string
+          enum: [Pending, Approved, Rejected, Cancelled]
+          nullable: true
+        requestDate: # Optional, defaults to today
+          type: string
+          format: date
+          nullable: true
+        items: # For Item, Equipment, Resources types
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestItemBase'
+          nullable: true
+        startDate: # For Leave type
+          type: string
+          format: date
+          nullable: true
+        endDate: # For Leave type
+          type: string
+          format: date
+          nullable: true
+      required: [type] # employeeId is derived or required if admin for other
+
+    AppRequestUpdate:
+      type: object
+      properties:
+        status: # Admin can update, Owner cannot if not pending
+          type: string
+          enum: [Pending, Approved, Rejected, Cancelled]
+          nullable: true
+        items: # For Item, Equipment, Resources types
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestItemBase'
+          nullable: true
+        startDate: # For Leave type
+          type: string
+          format: date
+          nullable: true
+        endDate: # For Leave type
+          type: string
+          format: date
+          nullable: true
+
+    # --- Workflow Schemas ---
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        employeeId:
+          type: integer
+        type:
+          type: string
+          example: Onboarding # Or "Department Transfer", "Request Approval", "Resources Request" etc.
+        details:
+          type: string
+        status:
+          type: string
+          enum: [Pending, InProgress, Completed, Failed, Cancelled]
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+      required: [employeeId, type, details, status]
+
+    WorkflowCreateGeneric: # For POST /workflows/
+      type: object
+      properties:
+        employeeId:
+          type: integer
+        type:
+          type: string
+        details:
+          type: string
+        status: # Optional, defaults to Pending
+          type: string
+          enum: [Pending, InProgress, Completed, Failed, Cancelled]
+          nullable: true
+      required: [employeeId, type, details]
+
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
   securitySchemes:
     bearerAuth:
       type: http

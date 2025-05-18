@@ -21,25 +21,25 @@ module.exports = router;
 
 function transfer(req, res, next) {
     workflowService.transferDepartment(req.body)
-        .then(() => res.json({message: "Workflow transfer created"}))
+        .then(() => res.json({message: "Workflow transfer created successfully."}))
         .catch(next);
     }
     
     function leave(req, res, next) {
         workflowService.requestLeave(req.body)
-        .then(() => res.json({message: "Workflow request leave created"}))
+        .then(() => res.json({message: "Workflow request leave created successfully."}))
         .catch(next);
     }
     
     function resources(req, res, next) {
         workflowService.requestItem(req.body)
-        .then(() => res.json({message: "Workflow request item created"}))
+        .then(() => res.json({message: "Workflow request item created successfully."}))
         .catch(next);
 }
 
 function onboarding(req, res, next) {
     workflowService.onboarding(req.body)
-        .then(workflow => res.json(workflow))
+        .then(workflow => res.json({message:"Workflow onboarding created successfully."}))
         .catch(next);
         }
 
@@ -58,23 +58,19 @@ function create(req, res, next) {
 
 function updateSchema(req, res, next) {
     const schema = Joi.object({
-        type: Joi.string().valid('Leave Request', 'Equipment Request', 'Department Change', 'Other'),
-        details: Joi.string().allow('', null),
-        status: Joi.string().valid('ForReviewing', 'Completed'),
-        comments: Joi.string().allow('', null),
-        handledBy: Joi.number().allow(null)
+        status: Joi.string().required(),
     });
     validateRequest(req, next, schema);
 }
 
 function update(req, res, next) {
     workflowService.update(req.params.id, req.body)
-        .then(workflow => res.json(workflow))
+        .then(() => res.json({message : "Workflow updated successfully."}))
         .catch(next);
 }
 
 function _delete(req, res, next) {
     workflowService.delete(req.params.id)
-        .then(() => res.json({ message: 'Workflow deleted successfully' }))
+        .then(() => res.json({ message: 'Workflow deleted successfully.' }))
         .catch(next);
 } 

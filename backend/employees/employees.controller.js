@@ -16,8 +16,8 @@ module.exports = router;
 
 function createEmployeeSchema(req, res, next) {
     const schema = Joi.object({
-        accountId: Joi.int().required(),
-        departmentId: Joi.int().required(),
+        accountId: Joi.number().required(),
+        departmentId: Joi.number().required(),
         position: Joi.string().required(),
         hireDate: Joi.date().required(),
         status: Joi.string().required()
@@ -27,7 +27,7 @@ function createEmployeeSchema(req, res, next) {
 
 function transferDepartmentSchema(req, res, next) {
     const schema = Joi.object({
-        departmentId: Joi.int().required()    });
+        departmentId: Joi.number().required()    });
     validateRequest(req, next, schema);
 }
 
@@ -46,27 +46,27 @@ function getAll(req, res, next) {
 
 function create(req, res, next) {
     employeeService.create(req.body)
-        .then(() => res.json({ message: 'Employee created' }))
+        .then((employee) => res.json({ message: 'Employee created successfully.', employee: employee }))
         .catch(next);
 }
 
 function update(req, res, next){
     const {id} = req.params
     employeeService.update(id, req.body)
-        .then(() => res.json({ message: 'Employee updated' }))
+        .then(() => res.json({ message: 'Employee updated successfully.' }))
         .catch(next);
 }
 
 function transferDepartment(req, res, next){
     const {id} = req.params
     employeeService.transferDepartment(id, req.body)
-        .then(() => res.json({ message: 'Employee transfered' }))
+        .then(() => res.json({ message: 'Employee transfered successfully.' }))
         .catch(next);
 }
 
 function _delete(req, res, next){
     const {id} = req.params
     employeeService.delete(id)
-        .then(() => res.json({ message: 'Employee deleted' }))
+        .then(() => res.json({ message: 'Employee deleted successfully.' }))
         .catch(next);
 }
