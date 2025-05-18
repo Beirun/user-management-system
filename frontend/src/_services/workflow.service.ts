@@ -14,14 +14,13 @@ import { environment } from '@/environments/environment';
 import { useAccountService } from '@/_services/account.service';
 import { useToastService } from '@/_services/toast.service';
 import type { Toast } from '@/models/toast';
-
 export function useWorkflowService() {
     const accountService = useAccountService();
     const toast = useToastService();
     const router = useRouter(); // Included for consistency
 
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${environment.apiUrl}/workflows${endpoint}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl}/workflows${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -45,22 +44,24 @@ export function useWorkflowService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Workflow operation failed');
         }
         
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             const result = await response.json();
-            if (result.message && (method === 'POST' || method === 'PUT' || method === 'DELETE') && !(method === 'POST' && (endpoint === '/' || endpoint === '/onboarding'))) {
-                 // Show toast for messages, but not if the result is the created/updated object itself for generic create/onboarding
-                 toast.success({ title: 'Success', description: result.message } as Toast);
-            } else if ((method === 'POST' || method === 'PUT') && (response.status === 200 || response.status === 201)) {
-                // Generic success toast if an object is returned (e.g. created/updated workflow)
-                // and no specific message was part of the JSON (or it's not a simple message response)
-                if (!result.message) { // Avoid double-toasting if message was already handled
-                    toast.success({ title: 'Success', description: 'Operation completed successfully.' } as Toast);
-                }
-            }
+            // if (result.message && (method === 'POST' || method === 'PUT' || method === 'DELETE') && !(method === 'POST' && (endpoint === '/' || endpoint === '/onboarding'))) {
+            //      // Show toast for messages, but not if the result is the created/updated object itself for generic create/onboarding
+            //      toast.success({ title: 'Success', description: result.message } as Toast);
+            // } else if ((method === 'POST' || method === 'PUT') && (response.status === 200 || response.status === 201)) {
+            //     // Generic success toast if an object is returned (e.g. created/updated workflow)
+            //     // and no specific message was part of the JSON (or it's not a simple message response)
+            //     if (!result.message) { // Avoid double-toasting if message was already handled
+            //         toast.success({ title: 'Success', description: 'Operation completed successfully.' } as Toast);
+            //     }
+            // }
             return result as T;
         }
 
@@ -84,8 +85,8 @@ export function useWorkflowService() {
     }
 
     // PUT /:id
-    async function update(id: number | string, params: UpdateWorkflowPayload): Promise<Workflow> { // Controller returns updated workflow
-        return await fetchRequest<Workflow>(`/${id}`, 'PUT', params);
+    async function update(id: number | string, params: UpdateWorkflowPayload): Promise<{message : string}> { // Controller returns updated workflow
+        return await fetchRequest<{message : string}>(`/${id}`, 'PUT', params);
     }
 
     // DELETE /:id
@@ -94,8 +95,8 @@ export function useWorkflowService() {
     }
 
     // POST /onboarding
-    async function createOnboardingWorkflow(params: OnboardingWorkflowPayload): Promise<Workflow> { // Controller returns workflow
-        return await fetchRequest<Workflow>('/onboarding', 'POST', params);
+    async function createOnboardingWorkflow(params: OnboardingWorkflowPayload): Promise<{message : string}> { // Controller returns workflow
+        return await fetchRequest<{message : string}>('/onboarding', 'POST', params);
     }
 
     // POST /transfer

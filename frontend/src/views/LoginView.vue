@@ -5,7 +5,7 @@ import { Eye } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'
 // import { toast } from 'vue-sonner'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 // import axios from '@/_helpers/axios';
 // import axios from 'axios';
 import { useAccountService } from '@/_services/account.service'
@@ -15,6 +15,7 @@ import type { Toast, ToastWithAction } from '@/models/toast'
 import { Switch } from '@/components/ui/switch'
 import { Sun, Moon, LogOut, User } from 'lucide-vue-next'
 import { useColorMode } from '@vueuse/core'
+import { is } from 'date-fns/locale'
 
 const mode = useColorMode({ disableTransition: false })
 const loginData = reactive({
@@ -25,91 +26,105 @@ const { login, isEmailVerified, emailExists, isPasswordCorrect } = useAccountSer
 const accountStore = useAccountStore()
 const toast = useToastService()
 const router = useRouter()
-
+const isSubmitting = ref(false)
 const handleLogin = async () => {
-  if (!loginData.email || !loginData.password) {
-    const toastOptions: Toast = {
-      title: 'Login Failed',
-      description: 'Please enter your email and password.',
-      type: 'error',
+  try {
+    isSubmitting.value = true
+    if (!loginData.email || !loginData.password) {
+      const toastOptions: Toast = {
+        title: 'Login Failed',
+        description: 'Please enter your email and password.',
+        type: 'error',
+      }
+      toast.error(toastOptions)
+      isSubmitting.value = false
+      return
     }
-    toast.error(toastOptions)
-    return
-  }
-  //check if emailexists
-  const emailExistsResult = await emailExists(loginData.email)
-  if (!emailExistsResult.exists) {
-    const toastOptions: Toast = {
-      title: 'Login Failed',
-      description: 'Email does not exist.',
-      type: 'error',
+    //check if emailexists
+    const emailExistsResult = await emailExists(loginData.email)
+    if (!emailExistsResult.exists) {
+      const toastOptions: Toast = {
+        title: 'Login Failed',
+        description: 'Email does not exist.',
+        type: 'error',
+      }
+      toast.error(toastOptions)
+      isSubmitting.value = false
+      return
     }
-    toast.error(toastOptions)
-    return
-  }
-  const isPasswordCorrectResult = await isPasswordCorrect(loginData.email, loginData.password)
-  if (!isPasswordCorrectResult.isCorrect) {
-    const toastOptions: Toast = {
-      title: 'Login Failed',
-      description: 'Password is incorrect.',
-      type: 'error',
+    const isPasswordCorrectResult = await isPasswordCorrect(loginData.email, loginData.password)
+    if (!isPasswordCorrectResult.isCorrect) {
+      const toastOptions: Toast = {
+        title: 'Login Failed',
+        description: 'Password is incorrect.',
+        type: 'error',
+      }
+      toast.error(toastOptions)
+      isSubmitting.value = false
+      return
     }
-    toast.error(toastOptions)
-    return
-  }
 
-  const isVerified = await isEmailVerified(loginData.email)
-  if (!isVerified.isVerified) {
-    const toastOptions: ToastWithAction = {
-      title: 'Login Failed',
-      description: 'Invalid email address. Please verify your email before logging in.',
-      type: 'error',
-      action: {
-        class:'button',
-        label: 'Verify Email',
-        onClick: () => {
-          window.location.href = `http://localhost:5173/account/verify-email?token=${isVerified.token}`
+    const isVerified = await isEmailVerified(loginData.email)
+    if (!isVerified.isVerified) {
+      const toastOptions: ToastWithAction = {
+        title: 'Login Failed',
+        description: 'Invalid email address. Please verify your email before logging in.',
+        type: 'error',
+        action: {
+          class: 'button',
+          label: 'Verify Email',
+          onClick: () => {
+            router.push(`/account/verify-email?token=${isVerified.token}`)
+          },
         },
-      },
+      }
+      toast.error(toastOptions)
+      isSubmitting.value = false
+      return
     }
-    toast.error(toastOptions)
-    return
-  }
-  const response = await login(loginData.email, loginData.password)
-  console.log('response', response)
-  if (!response) {
+    const response = await login(loginData.email, loginData.password)
+    console.log('response', response)
+    if (!response) {
+      const toastOptions: Toast = {
+        title: 'Login Failed',
+        description: 'Invalid email or password.',
+        type: 'error',
+      }
+      toast.error(toastOptions)
+      isSubmitting.value = false
+      return
+    }
+
+    accountStore.setAccount(response)
     const toastOptions: Toast = {
-      title: 'Login Failed',
-      description: 'Invalid email or password.',
-      type: 'error',
+      title: 'Login Successful',
+      description: 'Logged in successfully.',
+      type: 'success',
     }
-    toast.error(toastOptions)
-    return
+    toast.success(toastOptions)
+    isSubmitting.value = false
+
+    if (response.role === 'Admin') {
+      router.push('/admin/users')
+    } else {
+      router.push('/user/dashboard')
+    }
+
+    // Handle login logic here
+    // console.log(loginData);
+    // const response = await fetch("http://localhost:3000/accounts/test");
+    // const result = await response.json();
+
+    // console.log(result);
+    // toast.success('Success',{
+    //     description:"Registration successful, please check your email for verification instructions.",
+    // });
+  } catch (error) {
+    isSubmitting.value = false
   }
-
-  accountStore.setAccount(response)
-  const toastOptions: Toast = {
-    title: 'Login Successful',
-    description: 'Logged in successfully.',
-    type: 'success',
+  finally {
+    isSubmitting.value = false
   }
-  toast.success(toastOptions)
-
-  if (response.role === 'Admin') {
-    router.push('/admin/users')
-  } else {
-    router.push('/user/dashboard')
-  }
-
-  // Handle login logic here
-  // console.log(loginData);
-  // const response = await fetch("http://localhost:3000/accounts/test");
-  // const result = await response.json();
-
-  // console.log(result);
-  // toast.success('Success',{
-  //     description:"Registration successful, please check your email for verification instructions.",
-  // });
 }
 
 const toggleTheme = () => {
@@ -134,27 +149,23 @@ const toggleTheme = () => {
         <Input v-model="loginData.password" type="password" placeholder="Password" class="h-15" />
 
         <div class="w-full text-right italic">
-          <RouterLink class="hover:underline hover:text-primary transition-all duration-200" to="/forgot-password">Forgot your password?</RouterLink>
+          <RouterLink class="hover:underline hover:text-primary transition-all duration-200" to="/forgot-password">
+            Forgot your password?</RouterLink>
         </div>
-        <Button
-          @click="handleLogin"
-          class="w-full cursor-pointer h-15 text-md font-bold text-foreground"
-          >Login</Button
-        >
+        <Button @click="handleLogin" :disabled="isSubmitting"
+          class="w-full cursor-pointer h-15 text-md font-bold text-foreground">{{ isSubmitting ? 'Logging in...' :
+          'Login' }}</Button>
         <p>
           Don't have an account?
           <RouterLink to="/register" class="text-primary hover:underline">Register</RouterLink>
         </p>
         <div class="absolute bottom-10 gap-4 flex items-center text-lg">
           <p>Change To {{ mode === 'dark' ? 'Light' : 'Dark' }} Mode</p>
-          <Switch
-            :checked="mode === 'dark'"
-            @click="toggleTheme"
-            class="data-[state=checked]:bg-primary border-2 border-foreground "
-          >
+          <Switch :model-value="mode === 'light'" @click="toggleTheme"
+            class="data-[state=checked]:bg-foreground border-1 border-foreground ">
             <template #thumb>
-              <Sun v-if="mode === 'light'" class="h-4 w-4 text-primary" />
-              <Moon v-else class="h-4 w-4 text-primary" />
+              <Sun v-if="mode === 'light'" class="size-4 text-foreground " />
+              <Moon v-else class="size-4 text-background" />
             </template>
           </Switch>
         </div>

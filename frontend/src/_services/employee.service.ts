@@ -14,7 +14,7 @@ export function useEmployeeService() {
 
     // Base fetch function (adapted from account.service.ts)
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${environment.apiUrl}/employees${endpoint}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl}/employees${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -38,6 +38,8 @@ export function useEmployeeService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Employee request failed');
         }
 
@@ -69,8 +71,8 @@ export function useEmployeeService() {
         return await fetchRequest<Employee>(`/${id}`, 'GET');
     }
 
-    async function create(params: NewEmployee): Promise<{ message: string }> {
-        return await fetchRequest<{ message: string }>('/', 'POST', params);
+    async function create(params: NewEmployee): Promise<{ message: string, employee : Employee }> {
+        return await fetchRequest<{ message: string,  employee : Employee }>('/', 'POST', params);
     }
 
     async function update(id: number, params: UpdateEmployeeParams): Promise<{ message: string }> {

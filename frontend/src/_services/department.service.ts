@@ -6,7 +6,6 @@ import { environment } from '@/environments/environment';
 import { useAccountService } from '@/_services/account.service'; // To get token
 import { useToastService } from '@/_services/toast.service';
 import type { Toast } from '@/models/toast';
-
 export function useDepartmentService() {
     const accountService = useAccountService(); // To access account.value for token
     const toast = useToastService();
@@ -14,7 +13,7 @@ export function useDepartmentService() {
 
     // Base fetch function (adapted from account.service.ts)
     async function fetchRequest<T>(endpoint: string, method: string, body?: any): Promise<T> {
-        const url = `${environment.apiUrl}/departments${endpoint}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL ?? environment.apiUrl}/departments${endpoint}`;
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         };
@@ -38,6 +37,8 @@ export function useDepartmentService() {
                 type: 'error'
             };
             toast.error(toastOptions);
+                        if(error.message === "Unauthorized") router.push('/login');
+
             throw new Error(error.message || 'Department request failed');
         }
         // For POST/PUT/DELETE that return { message: '...' } on success
